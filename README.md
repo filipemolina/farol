@@ -4,11 +4,11 @@
 
 ![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-![Status](https://img.shields.io/badge/status-v0.3.0-blue)
+![Status](https://img.shields.io/badge/status-v0.4.1-blue)
 
 <p align="center"><img src="./assets/farol-banner.svg" alt="Farol" width="760"></p>
 
-[**Demo**](#demo) • [**Get Started**](#get-started) • [**Usage**](#usage) • [**For Agents**](#for-coding-agents)
+[**Demo**](#demo) • [**Features**](#features) • [**Get Started**](#get-started) • [**Usage**](#usage) • [**For Agents**](#for-coding-agents)
 
 ---
 
@@ -16,37 +16,13 @@
 
 ![Farol Demo](demo/demo.gif)
 
-## Why Farol for Agents?
+---
 
-Farol isn't just a todo list with a CLI bolted on—it's built from the ground up for **human + agent collaboration**. Here's why it works for agent workflows:
+## Origin story
 
-**1. One store, two views.** The TUI and CLI share a single SQLite store. When an agent completes a task via `farol <id>`, the TUI updates within a second. No sync, no polling loops, no "did it save?" uncertainty.
+This project started from a real workflow problem. When I work with AI coding agents, I found myself jumping between windows constantly. Open a todo app. Add a task when an idea pops into my head. Wait for the agent to finish what it was doing. Check the todo app. Talk to the agent about the next thing. Then manually check that task off my list. As more tasks piled up, that loop got messy fast.
 
-**2. Agent-first CLI with a real JSON contract.** Every subcommand supports `--json` and emits exactly one JSON value on stdout (success or error). No mixed stdout/stderr, no parsing text. `farol show <id> --json` returns the full task tree; `farol tasks <list> --json` returns the full tree. Errors are `{"error": "..."}` with consistent exit codes (0 success, 1 domain error, 2 usage).
-
-**3. Agent identity is first-class.** Set `FAROL_AGENT=claude` (or any tag) and the agent's presence appears as a live spinner on the task row in the TUI. The human sees exactly which task the agent is working on *right now*. `farol work --json` shows all live claims across the store.
-
-**4. `farol next` is the agent's work queue.** It returns the highest-priority eligible task (priority → tree order), auto-claims it, and returns the task JSON. The agent works it, updates progress, then `farol release <id>` (or `farol unassign <id>`) releases it. No manual queue management.
-
-**5. `farol skill` prints a ready-to-paste agent skill file** (markdown) with the full command reference — the identity contract, the working loop, the presence-versus-assignment distinction, and the traps an agent hits on its first run. Drop it into an agent's context and it knows the whole API.
-
-**6. `farol inbox` is the start-of-session context call.** One read returns the agent's own list plus every other list in the store, with pending and complete counts and the top pending tasks in each. The whole board in a single JSON value.
-
-**7. Assignment reserves the subtree.** Taking a task with `farol next` or `farol assign` locks its whole subtree: no other agent can claim an ancestor or a descendant of it. That is how two agents working the same list never end up doing the same work twice.
-
-**8. Structural writes are gated by list ownership.** `add`, `mv`, `rm`, `rename` refuse to run on a list another agent owns; status, progress, and comments stay open to everyone. Agents cooperate on work without reshaping each other's boards.
-
-**9. ID prefixes everywhere.** Every `<task-id>` and `<list-id>` argument accepts an unambiguous ULID prefix. Agents (and humans) copy 8 chars from `farol tasks --json` and it just works.
-
-**10. No server process.** The CLI talks directly to the SQLite store. No daemon, no socket, no extra infrastructure. `farol` is a single binary. Farol shipped an MCP server and retired it — a subprocess and a JSON-RPC handshake to run commands the agent could already run is a moving part with nothing to show for it.
-
-**11. Live presence is visible to humans.** When an agent claims a task, the TUI shows a spinner with the agent's tag on that row. The human sees *which* task is being worked, not just "something changed."
-
-**12. A change feed for polling agents.** `farol diff <list-id> --since <unix-seconds>` returns every task added or changed since a timestamp. Cheap to call, easy to loop on.
-
-**13. Export/Import for handoffs.** `farol export --json` dumps the entire store (or one list) as versioned JSON. `farol import` restores it. Perfect for checkpointing agent sessions or moving work between machines.
-
-**Bottom line:** Farol treats the agent as a first-class user, not an afterthought. The CLI is the agent's API; the TUI is the human's dashboard. They share one truth.
+There has to be a better way to do this (I'm absolutely certain there is). Well, anyways... building this has been fun, and I learned a lot about Go along the way. I plan to keep adding features / squashing bugs because this is something genuinely helpful to me. These are the things I think Farol actually brings to the table, beyond being a fast terminal todo list:
 
 ---
 
@@ -65,15 +41,7 @@ Farol isn't just a todo list with a CLI bolted on—it's built from the ground u
 - **Tree-structured with derived progress.** Nest tasks to any depth and watch
   percentages compute automatically.
 
----
-
-## Origin story
-
-This project started from a real workflow problem. When I work with AI coding agents, I found myself jumping between windows constantly. Open a todo app. Add a task when an idea pops into my head. Wait for the agent to finish what it was doing. Check the todo app. Talk to the agent about the next thing. Then manually check that task off my list. As more tasks piled up, that loop got messy fast.
-
-There has to be a better way to do this (I'm absolutely certain there is). Well, anyways... building this has been fun, and I learned a lot about Go along the way. I plan to keep adding features / squashing bugs because this is something genuinely helpful to me. These are the things I think Farol actually brings to the table, beyond being a fast terminal todo list:
-
-## What it does
+### Everything it does
 
 | Feature | Description |
 |---------|-------------|
@@ -82,17 +50,17 @@ There has to be a better way to do this (I'm absolutely certain there is). Well,
 | **Nested tasks** | `]` to add a child, `[` to add a sibling of parent |
 | **Status model** | `pending`, `in_progress`, `complete` with user % or derived % |
 | **Live agent presence** | Animated spinner lights on task writes. You see exactly what's working. |
-| **4-value priority** | `high` > `medium` > `low` > `none` (drives `next_task` ordering) |
+| **4-value priority** | `high` > `medium` > `low` > `none` (drives `farol next` ordering) |
 | **Agent CLI** | a single agent-facing front end: every operation is a `farol` subcommand emitting one JSON value with `--json` |
 | **Notes, comments, attachments** | Long-form notes per task, threaded comments, and file attachments (path, stdin, or URL) added via `farol attach`; view and delete them in the details modal |
-| **Change feed** | `farol diff <list-id> --since <unix-seconds>` returns tasks added or changed since a timestamp — cheap to poll |
+| **Change feed** | `farol diff <list-id> --since <unix-seconds>` returns tasks added or changed since a timestamp — cheap to poll; `farol watch <id>` streams the same changes live until `Ctrl+C` |
 | **Export / Import** | `farol export` / `farol import` (or `e` / `i` in the Lists panel) move lists and tasks between stores as versioned JSON |
 | **Archiving** | `farol lists archive`/`unarchive` hides a finished list from the sidebar and agent discovery without deleting it; browse, unarchive, or permanently delete archived lists from the TUI's Archived Lists page (`2`) |
-| **Themes** | 14 themes: four of the app's own (`farol-*`) plus ten imported community palettes (see `docs/DESIGN.md` §11) |
+| **Themes** | 14 themes: three of the app's own (`farol-dark`, `farol-dusk`, `farol-day`) plus eleven imported community palettes (see `docs/DESIGN.md` §11) |
 
 ---
 
-### Screenshots
+## Screenshots
 
 | Main view | Add task | Search |
 |-----------|----------|--------|
@@ -163,6 +131,8 @@ The default list `Inbox` is created automatically; the app opens on the
 | `]` | Indent the selected task (re-parent under previous sibling) |
 | `[` | Outdent the selected task (promote out of its parent) |
 | `alt+↑` / `alt+↓` | Move the selected task up or down among its siblings |
+| `g` / `G` | Jump to the first or last row |
+| `pgup` / `pgdown` | Page through the tree |
 | `u` | Release your assignment on the selected task |
 | `U` | Release every assignment you hold on the current list |
 | `ctrl+y` | Copy the selected task's id |
@@ -180,6 +150,11 @@ The default list `Inbox` is created automatically; the app opens on the
 | `?` | Show help overlay |
 | `q` / `Ctrl+C` | Quit |
 
+In the **lists** panel (`tab` to focus it), `n` creates a list, `R` renames
+the highlighted one, `A` archives it, `d` deletes it, and `e` / `i` export and
+import. The list editor's `space` toggles a list **collaborative** — see
+[For coding agents](#for-coding-agents) for what that opens up.
+
 The details modal (`enter` on a task) has one more tab-cycled zone beyond
 Title/Notes/Progress/Priority/Comments: **Attachments**, listing the task's
 files. `↑`/`↓` (or `k`/`j`) move the highlight and `d` deletes the selected
@@ -192,15 +167,16 @@ Every TUI operation is available via CLI commands (`farol --help` lists them all
 
 ```bash
 # Lists
-farol lists                       # list all lists with counts (add --include-archived to also show archived ones)
-farol lists add "Home"            # create a new list
+farol lists                       # list all lists with counts (--include-archived, --mine, --foreign)
+farol lists add "Home"            # create a list (human-managed: only you restructure it)
+farol lists add "Home" --owner pi # create a list owned by an agent tag
 farol lists rename <id> "Garden"  # rename a list
-farol lists rm <id>               # delete a list and its tasks
+farol lists rm <id> --force       # delete a list and its tasks (--force required)
 farol lists archive <id>          # archive a list (hides it from the sidebar and discovery)
 farol lists unarchive <id>        # restore an archived list
 
 # Tasks
-farol tasks <list-id>             # show tasks in a list (tree view)
+farol tasks <list-id>             # show tasks in a list (tree view; --flat, --status, --since, --include)
 farol add <list-id> "Buy paint"   # add a root task
 farol add <list-id> "Mix colors" --parent <task-id>  # add a subtask
 farol show <task-id> --json       # show full task details
@@ -211,8 +187,9 @@ farol reopen <task-id> [<task-id> ...]    # reopen one or more complete tasks
 farol rename <task-id> "New name" # rename a task
 farol notes <task-id> "text..."   # replace a task's notes (whole text)
 farol mv <task-id> --parent <id>  # re-parent a task (or --root)
-farol rm <task-id>                # delete a task and descendants
+farol rm <task-id> --force        # delete a task and descendants (--force required)
 farol diff <list-id> --since <unix-seconds>   # tasks added or changed since a timestamp
+farol watch <list-id|task-id>     # stream every change as it happens, until Ctrl+C
 
 # Progress & priority
 farol progress <task-id> --mode percentage --percent 60
@@ -222,7 +199,7 @@ farol priority <task-id> high    # none | low | medium | high
 
 # Comments
 farol comment <task-id> "note"    # add a comment to a task; prints its id
-farol comment rm <comment-id>     # delete a comment
+farol comment rm <comment-id> --force   # delete a comment (--force required)
 
 # Attachments (CLI-only — adding a file has no TUI keybinding)
 farol attach <task-id> <path>     # attach a local file, stored by path (not copied)
@@ -242,32 +219,49 @@ farol work                        # list every live presence claim
 
 # Agent onboarding
 farol inbox                       # your list + every other list, with top pending tasks
-farol skill                       # print the agent skill file (markdown)
+farol agent help                  # print the agent interaction protocol (markdown)
+farol skill                       # print the full agent command reference (markdown)
 
 # Search
 farol search "paint"              # fuzzy search across titles and notes
-farol search "deck" --json       # JSON output
+farol search "deck" --json        # JSON output (--list <id> restricts to one list)
 
 # Export & import
 farol export [list-id] [--out <file>]  # export the whole store or one list
 farol import <file> [--list <id>]      # import lists and tasks from an export file
 
+# Store & config
+farol status                      # counts, store size, migration level, config path
+farol config                      # view and edit ~/.config/farol/config.yaml
+farol work clean                  # drop presence claims older than the 120s TTL
+
 # Global
 farol --help                      # full CLI reference
+farol --version                   # version
 ```
 
-### For coding agents
+---
 
-Agents drive Farol through its CLI: every operation is a `farol` subcommand,
-and `--json` gives machine-readable output. There is no separate server process
-to manage. Agent identity for presence (the TUI spinner) comes from the
-`FAROL_AGENT` environment variable; when unset it is generated per process.
+## For coding agents
+
+Farol isn't a todo list with a CLI bolted on. The CLI *is* the agent's API, the
+TUI is the human's dashboard, and both read and write **one SQLite store** — a
+change on either side shows up on the other within a second. No sync, no polling
+loops, no daemon, no "did it save?" uncertainty.
+
+Agent identity comes from the `FAROL_AGENT` environment variable. **Set it.**
+Unset, the CLI falls back to the shared tag `agent`, so every unconfigured agent
+acts as the same one and they overwrite each other with no refusal. With it set,
+the agent shows up as a live spinner on its task row in the TUI, so the human
+sees *which* task is being worked, not just that something changed.
+
+### The working loop
 
 ```bash
 # Teach it: emit the full agent reference and drop it into the agent's context
 farol skill > .agent/skills/farol.md
 
-# The whole working loop — plain shell calls:
+# The whole loop — plain shell calls:
 export FAROL_AGENT=claude
 farol inbox --json                       # start-of-session context
 farol next <list-id> --json              # grab the top eligible task (auto-claims it)
@@ -277,24 +271,55 @@ farol <task-id>                          # mark complete when done
 farol release --all                      # drop every presence claim
 ```
 
-This project ships a CLI-first agent surface: every operation is a `farol`
-subcommand, and `--json` emits one JSON value per call, so an agent drives the
-store without a server process. The MCP server that previously mirrored these
-commands was retired in the cli-first migration — a subprocess and a JSON-RPC
-handshake to run commands the agent could already run is a moving part with
-nothing to show for it.
-
 `farol skill` is the canonical onboarding: it prints the identity contract, the
 working loop, the presence-versus-assignment distinction, the ownership gate,
 and the traps an agent hits on its first run. Pipe it into an agent's context
-and it knows the whole API.
+and it knows the whole API. `farol agent help` is the short form — the working
+loop alone, without the full command reference.
+
+### The JSON contract
+
+| Guarantee | What it means |
+|-----------|---------------|
+| **One value per call** | Every subcommand takes `--json` and emits exactly one JSON value on stdout, success or error. No mixed stdout/stderr, no text to parse. (`farol watch` is the deliberate exception: it streams one JSON value per line.) |
+| **Predictable failures** | Errors are `{"error": "..."}` with consistent exit codes: `0` success, `1` domain error, `2` usage. |
+| **ID prefixes everywhere** | Every `<task-id>` and `<list-id>` argument accepts an unambiguous ULID prefix — copy 8 characters out of `farol tasks --json` and it just works. |
+| **No server process** | The CLI talks straight to SQLite. One binary, no socket, nothing to keep running. |
+| **Deletes need `--force`** | `rm`, `lists rm`, and `comment rm` refuse to run without it — there is no confirm prompt to answer from a script. |
+
+### How two agents share a list
+
+| Mechanism | What it does |
+|-----------|--------------|
+| **`farol next` is the queue** | Returns the highest-priority eligible task (priority, then tree order), auto-claims it, prints its JSON. `farol release <id>` or `farol unassign <id>` hands it back. No manual queue management. |
+| **Assignment reserves the subtree** | Claiming a task locks its whole subtree: no other agent can take an ancestor or a descendant of it. That's how two agents on one list never do the same work twice. |
+| **Ownership gates structural writes** | `add`, `mv`, `rm`, `rename`, `notes`, and `priority` refuse to run on a list this agent does not own; status, progress, and comments stay open to everyone. Agents cooperate on work without reshaping each other's boards. |
+| **Ownership is opt-in** | A list is writable when its `created_by` matches `FAROL_AGENT`, or when it is flagged **collaborative** (`space` in the TUI's list editor), which opens it to everyone. A list created with no owner is human-managed and foreign to *every* agent — give an agent its own board with `farol lists add "Work" --owner <tag>`. |
+| **Presence is public** | `farol work --json` lists every live claim in the store; the TUI renders each one as a spinner tagged with the agent's name. |
+
+### Context and handoffs
+
+- **`farol inbox`** — the start-of-session call. One read returns the agent's own
+  list plus every other list in the store, with pending and complete counts and
+  the top pending tasks in each. The whole board in a single JSON value.
+- **`farol diff <list-id> --since <unix-seconds>`** — every task added or changed
+  since a timestamp. Cheap to call, easy to loop on. `farol watch <id>` is the
+  live version: it long-polls and prints one line per change until `Ctrl+C`,
+  and `--since` replays the same window first.
+- **`farol export --json` / `farol import`** — dump the entire store (or one list)
+  as versioned JSON and restore it. Checkpoint an agent session, or move work
+  between machines.
+
+> **On MCP:** Farol shipped an MCP server and retired it in the CLI-first
+> migration. A subprocess and a JSON-RPC handshake to run commands the agent
+> could already run is a moving part with nothing to show for it.
 
 ---
 
 ## Project status
 
 Alpha shipped. Phases 0–9 of [`docs/ROADMAP.md`](docs/ROADMAP.md) are
-complete (tagged `v0.1.0`). Post-alpha work is at `v0.3.0`.
+complete (tagged `v0.1.0`). Post-alpha work is at `v0.4.1`.
 
 See [`docs/STATUS.md`](docs/STATUS.md) for what each phase changed and why.
 
