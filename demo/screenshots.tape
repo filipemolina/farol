@@ -69,10 +69,10 @@ Type "L"
 Sleep 500ms
 
 # --- Theme picker: live preview --------------------------------------------
-# T opens the picker. seed.sh leaves the config unwritten, so the picker starts
-# on the app's built-in default (farol-dusk) and the screenshot is the live
-# preview of exactly what a fresh install shows. Pressing Down would move the
-# preview to a different theme, which would contradict the rest of the README.
+# T opens the picker. seed.sh pins farol-dark, so the picker opens on it and
+# the screenshot is the live preview of the palette every other still is
+# already in. Pressing Down would move the preview to a different theme,
+# which would contradict the rest of the README.
 Type "T"
 Sleep 1500ms
 Screenshot demo/screenshot-theme.png
@@ -95,8 +95,8 @@ Sleep 500ms
 
 # --- Archive page: the seeded archived list + its task preview -------------
 # 2 opens the Archived Lists page, the top nav's second tab. seed.sh archives
-# "Q2 roadmap" ahead of time, so this captures a real list + preview, not an
-# empty state.
+# "billing-migration" ahead of time, so this captures a real list + preview,
+# not an empty state.
 Type "2"
 Sleep 1200ms
 Screenshot demo/screenshot-archive.png

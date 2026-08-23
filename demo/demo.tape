@@ -18,8 +18,9 @@
 # v view-mode cycle on the seeded list, opens the lists panel, creates a
 # list, adds a root task and a nested subtask (one level deep via ]),
 # previews the theme picker, then opens the Archived Lists page (2) to show
-# the seeded archived list and its task preview. seed.sh leaves the config
-# unset, so the whole walkthrough runs in the app's default theme.
+# the seeded archived list and its task preview. seed.sh pins farol-dark, the
+# brand navy/amber palette the landing page is built from, so the whole
+# walkthrough runs in it.
 
 Output demo/demo.gif
 
@@ -89,7 +90,7 @@ Sleep 800ms
 # would re-open it. Focus lands on the now-empty task tree.
 Type@1ms "n"
 Sleep 700ms
-Type "Weekend chores"
+Type "server-maint"
 Sleep 600ms
 Enter
 Sleep 1500ms
@@ -100,17 +101,18 @@ Sleep 1500ms
 # title). Type the name, Enter saves it. Rapid entry keeps a fresh, focused
 # input anchored on the just-created task, so the next task can be indented
 # straight away.
-Type "Grocery run"
+Type "Rotate the TLS certs"
 Sleep 500ms
 Enter
 Sleep 1200ms
 
 # --- Add a nested subtask (one level deep) -----------------------------------
-# The input is still live and anchored on "Grocery run". ] (Tree.Indent) sets
-# the create level to +1, so the new task becomes a child of "Grocery run".
+# The input is still live and anchored on "Rotate the TLS certs". ]
+# (Tree.Indent) sets the create level to +1, so the new task becomes a child
+# of "Rotate the TLS certs".
 Type@1ms "]"
 Sleep 800ms
-Type "Pick up milk"
+Type "Reload nginx on the edge nodes"
 Sleep 500ms
 Enter
 Sleep 1500ms
@@ -122,12 +124,10 @@ Escape
 Sleep 800ms
 
 # --- Theme picker: live preview ----------------------------------------------
-# T opens the picker. seed.sh leaves the config unwritten, so the picker
-# starts on the app's built-in default (farol-dusk), and holding here is the
-# live preview of exactly what a fresh install shows. Walking the cursor
-# would re-paint the app in unrelated themes, breaking the demo's claim that
-# the rest of the recording is the default theme. Esc discards the preview
-# without persisting.
+# T opens the picker. seed.sh pins farol-dark, so the picker opens on it and
+# holding here previews the palette the rest of the recording is already in.
+# Walking the cursor would re-paint the app in unrelated themes, breaking
+# that. Esc discards the preview without persisting.
 Type@1ms "T"
 Sleep 1500ms
 Escape
@@ -135,8 +135,8 @@ Sleep 2000ms
 
 # --- Archive page: browse the archived list + its task preview, then back --
 # 2 opens the Archived Lists page, the top nav's second tab
-# (src/keys/Keys.go). seed.sh archives "Q2 roadmap" ahead of time, so this
-# shows a real list + preview, not an empty state. 1 returns to Active.
+# (src/keys/Keys.go). seed.sh archives "billing-migration" ahead of time, so
+# this shows a real list + preview, not an empty state. 1 returns to Active.
 Type@1ms "2"
 Sleep 1500ms
 Type@1ms "1"

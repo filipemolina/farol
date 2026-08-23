@@ -30,12 +30,15 @@ LDFLAGS="-X github.com/filipemolina/farol/src/constants.version=$VERSION"
 mkdir -p "$(dirname "$BIN")"
 go build -ldflags "$LDFLAGS" -o "$BIN" .
 
-# Leave the config unwritten so the app boots on its built-in default theme
-# (appstyles.DefaultTheme, farol-dusk). Recording the default keeps the demo
-# honest about what a fresh install looks like; pin a theme here only if a
-# release deliberately ships brand media in a different one.
+# Pin farol-dark. This is a deliberate branding choice, not a claim about what
+# a fresh install shows -- appstyles.DefaultTheme is farol-dusk. farol-dark is
+# the brand navy/amber palette, and the landing page is built from it directly:
+# tailwind.config.mjs's terminal.* tokens are a literal copy of farol-dark's Go
+# source (see demo/landing.tape). Pinning it here is also what keeps committed
+# "dark theme" media reproducible whichever theme is the fresh-install default.
 rm -rf "$DATA" "$CONFIG"
-mkdir -p "$DATA"
+mkdir -p "$DATA" "$CONFIG/farol"
+printf 'theme: farol-dark\n' > "$CONFIG/farol/config.yaml"
 
 export XDG_DATA_HOME="$DATA"
 export XDG_CONFIG_HOME="$CONFIG"
@@ -102,10 +105,11 @@ run notes --force "$p95" "The N+1 on tags is most of it. Client timeout is 2s an
 # A third list, archived immediately after seeding, so the Archive page (new
 # this version) has a real list + task preview to show instead of an empty
 # state. Kept separate from "api"/"infra" so archiving it cannot affect the
-# cross-list search demo above.
-ARCHIVE=$(run lists add "Q2 roadmap")
+# cross-list search demo above. Finished delivery work is the realistic thing
+# to find in an archive, so it reads as a shipped migration.
+ARCHIVE=$(run lists add "billing-migration")
 add "$ARCHIVE" "Sunset the old billing API"
-add "$ARCHIVE" "Migrate remaining customers off it"
+add "$ARCHIVE" "Cut the customers over to Stripe"
 run lists archive "$ARCHIVE"
 
 # Every write above auto-claimed presence under the default "agent" identity
