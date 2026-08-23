@@ -69,7 +69,7 @@ func looksLikeTaskID(s string) bool { return taskIDPattern.MatchString(s) }
 func NewRootCommand() *cobra.Command {
 	root := &cobra.Command{
 		Use:   "farol",
-		Short: "a terminal to-do list manager, and a CLI an agent can drive",
+		Short: "a terminal to-do list: yours to keep, your agent's to work",
 		Long: `farol is a keyboard-driven terminal to-do list, paired with a
 full command-line interface for the same operations — the TUI and the CLI
 are two views of one store, and either one's changes are visible to the

@@ -1,6 +1,6 @@
 # Farol
 
-**A terminal to-do list you can watch, and your agent can steer.**
+**Your to-do list. Your agent's work queue.**
 
 ![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
@@ -195,7 +195,7 @@ farol watch <list-id|task-id>     # stream every change as it happens, until Ctr
 farol progress <task-id> --mode percentage --percent 60
 farol progress <task-id> --mode subtasks   # derive % from children
 farol progress <task-id> --mode simple     # plain in_progress flag
-farol priority <task-id> high    # none | low | medium | high
+farol priority <task-id> --level high   # none | low | medium | high
 
 # Comments
 farol comment <task-id> "note"    # add a comment to a task; prints its id

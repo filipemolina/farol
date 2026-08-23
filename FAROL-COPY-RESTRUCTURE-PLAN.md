@@ -1159,7 +1159,7 @@ import FinalCta from '@/components/FinalCta.astro';
 import Footer from '@/components/Footer.astro';
 ---
 
-<Layout title="Farol - a terminal to-do list you can watch, and your agent can drive" description="Farol is a terminal to-do list built for working alongside coding agents. A TUI for you, a CLI for them, one SQLite store, live presence on every row. No server required.">
+<Layout title="Farol - your to-do list, your agent's work queue" description="Farol is a terminal to-do list built for working alongside coding agents. A TUI for you, a CLI for them, one SQLite store, live presence on every row. No server required.">
   <Navigation />
   <main id="main-content">
     <Hero />
