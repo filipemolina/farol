@@ -30,14 +30,12 @@ LDFLAGS="-X github.com/filipemolina/farol/src/constants.version=$VERSION"
 mkdir -p "$(dirname "$BIN")"
 go build -ldflags "$LDFLAGS" -o "$BIN" .
 
-# Pin the theme so frames don't depend on whatever the recorder's own config
-# holds. The demo records in farol-dark (the brand navy/amber palette;
-# farol-dusk is DefaultTheme as of 2026-08-18, but this pin is deliberately
-# independent of that so committed "dark theme" media stays reproducible
-# whichever theme is the fresh-install default).
+# Leave the config unwritten so the app boots on its built-in default theme
+# (appstyles.DefaultTheme, farol-dusk). Recording the default keeps the demo
+# honest about what a fresh install looks like; pin a theme here only if a
+# release deliberately ships brand media in a different one.
 rm -rf "$DATA" "$CONFIG"
-mkdir -p "$DATA" "$CONFIG/farol"
-printf 'theme: farol-dark\n' > "$CONFIG/farol/config.yaml"
+mkdir -p "$DATA"
 
 export XDG_DATA_HOME="$DATA"
 export XDG_CONFIG_HOME="$CONFIG"

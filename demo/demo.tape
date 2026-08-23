@@ -13,10 +13,13 @@
 #
 # The recording starts the instant the TUI window appears — all shell setup
 # (build, seed, env vars) happens with Show suppressed, so the GIF is 100%
-# TUI. The demo walks the v view-mode cycle on the seeded list, opens the
-# lists panel, creates a list, adds a root task and a nested subtask (one
-# level deep via ]), previews the theme picker, then opens the Archived
-# Lists page (2) to show the seeded archived list and its task preview.
+# TUI, and it ends the same way: q is pressed under a fresh Hide so the last
+# frame is the app, not the shell prompt that follows it. The demo walks the
+# v view-mode cycle on the seeded list, opens the lists panel, creates a
+# list, adds a root task and a nested subtask (one level deep via ]),
+# previews the theme picker, then opens the Archived Lists page (2) to show
+# the seeded archived list and its task preview. seed.sh leaves the config
+# unset, so the whole walkthrough runs in the app's default theme.
 
 Output demo/demo.gif
 
@@ -28,24 +31,30 @@ Set Theme "Dracula"
 # A blinking cursor changes pixels twice a second; every tick is a frame the
 # GIF has to carry. Holding it still saves megabytes on a recording this long.
 Set CursorBlink false
-Set TypingSpeed 45ms
+# 150ms per character is a comfortable human typist (~80 wpm). The old 45ms
+# read as pasted text. This default governs every VISIBLE typed string — the
+# list name and the two task titles — which is the only typing the GIF shows.
+# Two kinds of line keep an @1ms override: single-key walkthrough steps (a
+# lone keypress is instant for a person too) and the hidden setup commands
+# above the Show, where slow typing would only pad the render.
+Set TypingSpeed 150ms
 
 # Build the binary and seed the throwaway store. seed.sh compiles ./farol into
 # /tmp/farol-demo/farol itself, so this is self-contained from a clean
 # checkout. Hide every frame of setup — the GIF starts at the TUI on the
 # seeded "Home" list.
 Hide
-Type "cd /home/filipe/Documents/projects/farol && ./demo/seed.sh && clear"
+Type@1ms "cd /home/filipe/Documents/projects/farol && ./demo/seed.sh && clear"
 Enter
 Sleep 3s
 # Export the same throwaway XDG dirs inside the visible shell so the TUI reads
 # them (also hidden — we only want to show the app).
-Type "export XDG_DATA_HOME=/tmp/farol-demo/data XDG_CONFIG_HOME=/tmp/farol-demo/config && clear"
+Type@1ms "export XDG_DATA_HOME=/tmp/farol-demo/data XDG_CONFIG_HOME=/tmp/farol-demo/config && clear"
 Enter
 Sleep 800ms
 
 # Launch the TUI. Show only after it has had time to render.
-Type "/tmp/farol-demo/farol"
+Type@1ms "/tmp/farol-demo/farol"
 Enter
 Sleep 3s
 Show
@@ -80,7 +89,7 @@ Sleep 800ms
 # would re-open it. Focus lands on the now-empty task tree.
 Type@1ms "n"
 Sleep 700ms
-Type@1ms "Weekend chores"
+Type "Weekend chores"
 Sleep 600ms
 Enter
 Sleep 1500ms
@@ -91,7 +100,7 @@ Sleep 1500ms
 # title). Type the name, Enter saves it. Rapid entry keeps a fresh, focused
 # input anchored on the just-created task, so the next task can be indented
 # straight away.
-Type@1ms "Grocery run"
+Type "Grocery run"
 Sleep 500ms
 Enter
 Sleep 1200ms
@@ -101,7 +110,7 @@ Sleep 1200ms
 # the create level to +1, so the new task becomes a child of "Grocery run".
 Type@1ms "]"
 Sleep 800ms
-Type@1ms "Pick up milk"
+Type "Pick up milk"
 Sleep 500ms
 Enter
 Sleep 1500ms
@@ -113,12 +122,12 @@ Escape
 Sleep 800ms
 
 # --- Theme picker: live preview ----------------------------------------------
-# T opens the picker. The picker starts on the active theme (farol-dark after
-# seed.sh), so opening it and holding here is the live preview of the app's
-# default theme — the README's screenshots are also captured in this view.
-# Walking the cursor would re-paint the app in unrelated themes, breaking the
-# demo's claim that the rest of the recording is farol-dark. Esc discards the
-# preview without persisting.
+# T opens the picker. seed.sh leaves the config unwritten, so the picker
+# starts on the app's built-in default (farol-dusk), and holding here is the
+# live preview of exactly what a fresh install shows. Walking the cursor
+# would re-paint the app in unrelated themes, breaking the demo's claim that
+# the rest of the recording is the default theme. Esc discards the preview
+# without persisting.
 Type@1ms "T"
 Sleep 1500ms
 Escape
@@ -132,3 +141,10 @@ Type@1ms "2"
 Sleep 1500ms
 Type@1ms "1"
 Sleep 1200ms
+
+# --- Quit ---------------------------------------------------------------------
+# q exits to the shell, so Hide is re-engaged first: the recording ends on the
+# TUI's last frame instead of the prompt that follows the exit.
+Hide
+Type@1ms "q"
+Sleep 500ms

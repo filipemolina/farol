@@ -45,25 +45,16 @@ Screenshot demo/screenshot-help.png
 Escape
 Sleep 600ms
 
-# --- Complete section: watch the cascade move items to the Complete section --
-# The cursor is on "Plan the garden" (first root). space completes it and
-# every descendant at once; they move to the Complete section below.
+# Close the lists panel so the task tree fills the width. Closing it also
+# hands focus back to the tree, so n below opens the new-TASK input rather
+# than the lists panel's new-LIST modal.
 Type "L"
 Sleep 500ms
-Sleep 300ms
-Space
-Sleep 1500ms
-Screenshot demo/screenshot-complete.png
-Escape
-Sleep 500ms
-# Toggle it back so the remaining shots start from a clean tree.
-Space
-Sleep 1200ms
 
 # --- Add input: n starts creating, ] makes the level a child ---------------
 Type "n"
 Sleep 500ms
-Type "Grow a trellis"
+Type "Add rate limiting"
 Sleep 400ms
 Type "]"
 Sleep 500ms
@@ -73,15 +64,14 @@ Sleep 500ms
 Escape
 Sleep 500ms
 
-# Close the lists panel so the task tree fills the width for the remaining
-# shots (theme picker, search).
+# Re-open the lists panel so the remaining shots carry it in frame.
 Type "L"
 Sleep 500ms
 
 # --- Theme picker: live preview --------------------------------------------
-# T opens the picker. The picker starts on the active theme (farol-dark after
-# seed.sh), so the screenshot here is the live preview of farol-dark itself —
-# a closing shot of the demo's default theme. Pressing Down moves the
+# T opens the picker. seed.sh leaves the config unwritten, so the picker starts
+# on the app's built-in default (farol-dusk) and the screenshot is the live
+# preview of exactly what a fresh install shows. Pressing Down would move the
 # preview to a different theme, which would contradict the rest of the README.
 Type "T"
 Sleep 1500ms
@@ -90,9 +80,14 @@ Escape
 Sleep 600ms
 
 # --- Global search picker --------------------------------------------------
+# "timeout" is the query the seed is built for: "Raise the gateway timeout"
+# (infra) matches on title and ranks above "Cut the p95 on /search" (api),
+# which matches on notes only. One shot, two lists, and the documented
+# ranking rule. The old "trellis" query matched a task the tape types but
+# never saves, so this shot shipped reading "No matches".
 Type "F"
 Sleep 800ms
-Type "trellis"
+Type "timeout"
 Sleep 1.5s
 Screenshot demo/screenshot-search.png
 Escape
@@ -106,6 +101,26 @@ Type "2"
 Sleep 1200ms
 Screenshot demo/screenshot-archive.png
 Escape
+Sleep 500ms
+# 1 returns to the Active page for the last shot.
+Type "1"
+Sleep 800ms
+
+# --- Complete section: watch the cascade move items to the Complete section --
+# The cursor is on "Ship auth v2" (first root, seeded with a 3-level subtree).
+# space completes it and every descendant at once; they move to the Complete
+# section below.
+#
+# This shot comes last because it is the only destructive one, and completing
+# a root does NOT un-cascade: a following Space un-completes the root but
+# leaves its descendants complete. Run before the other shots, it left them
+# all photographing a pending parent over three completed children.
+Type "L"
+Sleep 500ms
+Sleep 300ms
+Space
+Sleep 1500ms
+Screenshot demo/screenshot-complete.png
 Sleep 500ms
 
 Ctrl+C

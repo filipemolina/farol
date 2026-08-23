@@ -22,11 +22,19 @@ test:
 	go test -count=1 ./...
 	go test -race ./src/store/ ./src/cli/
 
-# Build and seed the demo, then record a new demo GIF.
+# Build and seed the demo, then record a new demo GIF and the README stills.
 # Requires VHS (https://github.com/charmbracelet/vhs) and ffmpeg.
+#
+# seed.sh runs twice on purpose: demo.tape writes to the store it records
+# (it creates a list and two tasks), so the stills would otherwise be shot
+# against the demo's leftovers instead of the seeded store they document.
+#
+# Set FAROL_DEMO_VERSION to stamp a specific version into the recorded
+# binary; seed.sh otherwise derives it from git describe, which appends
+# -dirty whenever the working tree has uncommitted changes.
 demo:
-	go build -o /tmp/farol-demo/farol .
 	./demo/seed.sh /tmp/farol-demo/farol
 	vhs demo/demo.tape
 	./demo/compress.sh
+	./demo/seed.sh /tmp/farol-demo/farol
 	vhs demo/screenshots.tape
