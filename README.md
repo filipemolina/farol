@@ -12,6 +12,10 @@
 
 ---
 
+## Demo
+
+![Farol Demo](demo/demo.gif)
+
 ## Why Farol for Agents?
 
 Farol isn't just a todo list with a CLI bolted on—it's built from the ground up for **human + agent collaboration**. Here's why it works for agent workflows:
@@ -45,10 +49,6 @@ Farol isn't just a todo list with a CLI bolted on—it's built from the ground u
 **Bottom line:** Farol treats the agent as a first-class user, not an afterthought. The CLI is the agent's API; the TUI is the human's dashboard. They share one truth.
 
 ---
-
-## Demo
-
-![Farol Demo](demo/demo.gif)
 
 ## Features
 
