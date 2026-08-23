@@ -22,7 +22,10 @@ Set Height 720
 Set Padding 0
 Set CursorBlink false
 Set TypingSpeed 1ms
-Output landing-split.mp4
+# The only asset this tape ships is the Screenshot below. VHS still needs an
+# Output to record into, so send the throwaway video to /tmp rather than
+# dropping an untracked landing-split.mp4 in the repo root on every run.
+Output "/tmp/farol-landing-split.mp4"
 
 Set Theme { "name": "farol-landing", "background": "#0E1B30", "foreground": "#F5EDE4", "cursor": "#F0B263", "selection": "#22385C", "black": "#0E1B30", "red": "#D9534F", "green": "#67C58A", "yellow": "#E8C547", "blue": "#22385C", "magenta": "#EB4268", "cyan": "#8A94A8", "white": "#F5EDE4", "brightBlack": "#3A4A63", "brightRed": "#EB4268", "brightGreen": "#67C58A", "brightYellow": "#F0B263", "brightBlue": "#3A4A63", "brightMagenta": "#EB4268", "brightCyan": "#C4BEB6", "brightWhite": "#F5EDE4" }
 

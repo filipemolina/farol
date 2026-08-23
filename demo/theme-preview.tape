@@ -1,8 +1,9 @@
 # VHS tape for the theme picker live preview demo.
 # Records: open theme picker (T) → navigate themes with ↑/↓ showing live preview
 # → select a theme (enter) → modal closes.
-# Shows the three brand themes: farol-dark (default), farol-day (light), and
-# farol-dusk (second dark variant).
+# Shows farol-dark (the pinned theme the picker opens on) plus the four themes
+# below it: farol-day, farol-dusk, gruvbox-dark and gruvbox-light. Two lights
+# and two darks, each held long enough to read.
 #
 # Uses a dedicated temp dir /tmp/farol-demo-themes so it never collides with
 # other concurrent recordings.
@@ -49,28 +50,34 @@ Show
 # Press Enter to select a theme and close the modal.
 
 Type@1ms "T"
-Sleep 1500ms
-
-# Start on farol-dark (default). Hold to show it.
-Sleep 1000ms
-
-# Down to farol-day (light) — the light theme
-Down
 Sleep 1200ms
 
-# Down to farol-dusk (second dark variant)
-Down
+# Start on farol-dark, the pinned theme. Hold to establish it.
 Sleep 1500ms
 
-# Up back to farol-day
+# Four consecutive Downs, 2.5s each: farol-day (light), farol-dusk (purple
+# dark), gruvbox-dark (warm dark), gruvbox-light (cream light). The holds are
+# the point -- at the old 1-1.5s the eye barely registered the change before
+# the next keystroke.
+Down
+Sleep 2500ms
+Down
+Sleep 2500ms
+Down
+Sleep 2500ms
+Down
+Sleep 2500ms
+
+# Walk back up to farol-dark and select it with Enter, so the GIF ends on the
+# theme every other committed asset is recorded in.
+Up
+Sleep 700ms
+Up
+Sleep 700ms
+Up
+Sleep 700ms
 Up
 Sleep 1000ms
-
-# Up to farol-dark (back to default)
-Up
-Sleep 1000ms
-
-# Select farol-dark with Enter — modal closes
 Enter
 Sleep 1500ms
 

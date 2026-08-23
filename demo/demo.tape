@@ -124,12 +124,31 @@ Escape
 Sleep 800ms
 
 # --- Theme picker: live preview ----------------------------------------------
-# T opens the picker. seed.sh pins farol-dark, so the picker opens on it and
-# holding here previews the palette the rest of the recording is already in.
-# Walking the cursor would re-paint the app in unrelated themes, breaking
-# that. Esc discards the preview without persisting.
+# T opens the picker on farol-dark, the pinned theme. Each Down re-paints the
+# whole app live, so the walk below is the feature demonstrating itself rather
+# than a list of theme names.
+#
+# Four consecutive Downs from farol-dark, held 2.5s each so a viewer can
+# actually read the difference: farol-day, farol-dusk, gruvbox-dark,
+# gruvbox-light. Consecutive rather than curated so the walk cannot silently
+# drift if a theme is added to the picker -- the count is the only thing that
+# would need revisiting, not a set of row indices. The pairing is deliberate:
+# two lights and two darks, so the frame changes substantially each step.
+#
+# Esc discards the preview WITHOUT persisting, so the app snaps back to
+# farol-dark and every later frame is the pinned theme again. That is what
+# makes walking the picker safe here; an Enter would write the config and
+# re-theme the rest of the recording.
 Type@1ms "T"
-Sleep 1500ms
+Sleep 1200ms
+Down
+Sleep 2500ms
+Down
+Sleep 2500ms
+Down
+Sleep 2500ms
+Down
+Sleep 2500ms
 Escape
 Sleep 2000ms
 

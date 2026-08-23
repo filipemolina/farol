@@ -128,13 +128,43 @@ Sleep 900ms
 Enter
 Sleep 2000ms
 
+# --- Dismiss the still-live create input --------------------------------------
+# Enter SAVES the task but leaves a fresh rapid-entry input anchored below it,
+# so the keyboard still belongs to a text field. Esc returns it to the tree.
+# This is load-bearing for the theme walk below: typed before it, the T would
+# land in the input as a task title instead of opening the picker.
+Escape
+Sleep 800ms
+
+# --- Theme picker: walk four themes live --------------------------------------
+# The page claims a themeable TUI; this is that claim happening. T opens the
+# picker on farol-dark (seed.sh pins it) and each Down re-paints the entire
+# app, so four Downs held 2.5s each show farol-day, farol-dusk, gruvbox-dark
+# and gruvbox-light -- two lights and two darks, so consecutive frames differ
+# substantially rather than shading into each other.
+#
+# Esc discards the preview without writing the config, so the app returns to
+# farol-dark for the closing frames. Enter would persist the last previewed
+# theme and leave the video ending in gruvbox-light against a navy page.
+Type "T"
+Sleep 1200ms
+Down
+Sleep 2500ms
+Down
+Sleep 2500ms
+Down
+Sleep 2500ms
+Down
+Sleep 2500ms
+Escape
+Sleep 1500ms
+
 # --- Rest on the finished state ----------------------------------------------
 # The tape used to end with Ctrl+C + Sleep 600ms to quit the app cleanly, but
 # that flashed the exited shell prompt into the final ~0.6s of the recording,
 # which read as "the demo is over" instead of "look at the finished tree".
 # Ending inside the app leaves the last frame on the tree state; VHS tears
 # down the pty when the tape ends, and the app never gets a chance to redraw.
-Escape
 Sleep 3000ms
 
 # ---------------------------------------------------------------------------

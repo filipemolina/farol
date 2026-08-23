@@ -50,12 +50,14 @@
 #    navy. The bug this guards against is 29 29 41 (#1D1D29), the desaturated
 #    grey-purple every shipped screenshot had, which fails that test.
 #
-# 3. The store is seeded immediately before recording. Every screenshot on the
-#    landing page today shows a list called "Weekend chores" holding two tasks
-#    -- leftovers from demo.tape, which shares /tmp/farol-demo. screenshots.tape
-#    does not seed itself and was run after the GIF, so it photographed the
-#    GIF's debris. seed.sh now also releases its own auto-claims, so a spinner
-#    in a frame means something.
+# 3. The store is seeded immediately before recording. This is not optional
+#    housekeeping: demo.tape shares /tmp/farol-demo and writes to the store it
+#    records, so a tape run without its own seed photographs the previous
+#    tape's debris. The landing page shipped exactly that for a while -- every
+#    still showed a "Weekend chores" list the GIF had just created. The
+#    Makefile's demo target now re-seeds between recordings for the same
+#    reason. seed.sh also releases its own auto-claims, so a spinner in a
+#    frame means something.
 #
 # The app theme stays farol-dark. Unlike cais, farol's landing page palette IS
 # the app's default theme -- tailwind.config.mjs's terminal.* tokens are a
