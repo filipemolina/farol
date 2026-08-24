@@ -98,22 +98,12 @@ Act on the Lists panel, which must be visible and focused.
 | `alt+↓` `alt+j` | Move the highlighted list down. |
 | `e` | Export — the highlighted list, or the whole store. |
 | `i` | Import lists from a JSON file. |
+| `A` | Archive the highlighted list to the Archived Lists page (confirm-guarded). |
 | `/` | Filter the panel's lists. |
 
-`L` shows the Lists panel and moves focus into it; `tab` moves focus back. `enter` and `esc` also close it, on the selected list and on cancel respectively.
+`L` shows the Lists panel and moves focus into it. `enter` picks the highlighted list and closes the panel; `esc` closes without picking. Restore an archived list with `u` on the Archived Lists page.
 
-## Renaming a list
-
-Act inside the list-name modal's Rename mode.
-
-| Key | Action |
-| --- | --- |
-| `enter` | Confirm the new name. |
-| `esc` | Cancel. |
-| `tab` | Next field (name → collaborative toggle). |
-| `space` | Toggle the collaborative flag — any agent may restructure the list. |
-
-`tab` and `space` only apply in Rename mode; New-list mode is a bare text input.
+In the list-name modal (`n` new / `R` rename), `tab` moves between the name field and the collaborative toggle and `space` flips the toggle — the modal advertises these on its own hint line, so they have no help-overlay scope.
 
 ## Details
 
@@ -150,12 +140,12 @@ Act inside the Archived Lists page, which owns the keyboard while open — it is
 | `g` `home` | Jump to the first archived list. |
 | `G` `end` | Jump to the last archived list. |
 | `/` | Filter the list by name (live). |
-| `u` | Unarchive the selected list — no confirmation, it's reversible. |
+| `u` | Unarchive the selected list (confirm-guarded). |
 | `d` | Permanently delete the selected list and its tasks (confirm-guarded). |
 | `esc` | Clear the filter first; with nothing left to clear, leave the page. |
 | `1` | Leave the page for Active — a second way off it, alongside `esc`. |
 
-`2` opens the page from anywhere; `1` leaves it from anywhere. There is no key to *archive* a list — that's CLI-only (`farol lists archive <list-id>`); the page is for browsing, restoring, and permanently deleting what's already archived.
+`2` opens the page from anywhere; `1` leaves it from anywhere. Lists get archived with `A` in the Lists panel; the page is for browsing, restoring, and permanently deleting what's already archived.
 
 ## Overlays
 

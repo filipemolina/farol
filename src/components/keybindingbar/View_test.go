@@ -13,7 +13,10 @@ import (
 
 func TestFooterRendersContextAndGlobalKeys(t *testing.T) {
 	m := New()
-	m, _ = m.(Model).Update(cmds.SetBodyLayoutMsg{TerminalWidth: 120})
+	// Wide enough that no hint sheds: this test proves context and global
+	// hints render together, while TestFooterShedsHintsOnNarrowTerminal
+	// covers what a narrow bar drops.
+	m, _ = m.(Model).Update(cmds.SetBodyLayoutMsg{TerminalWidth: 150})
 	m, _ = m.(Model).Update(cmds.SetFooterContextMsg{
 		Focused:           constants.COMPONENT_TASK_TREE,
 		HasActiveList:     true,
@@ -22,9 +25,9 @@ func TestFooterRendersContextAndGlobalKeys(t *testing.T) {
 	})
 
 	out := m.(Model).View().Content
-	// navigate, delete and new (n) are the task tree's context hints; help
-	// is a global pinned on the right.
-	for _, label := range []string{"navigate", "delete", "new", "help"} {
+	// navigate, delete and new task (n) are the task tree's context hints;
+	// help is a global pinned on the right.
+	for _, label := range []string{"navigate", "delete", "new task", "help"} {
 		if !strings.Contains(out, label) {
 			t.Errorf("footer output missing %q:\n%s", label, out)
 		}

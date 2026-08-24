@@ -694,9 +694,9 @@ found the surface it belongs to is not documented at all. The same failure, in
 its worst form, is what shipped — `n` (new task) was bound, handled, advertised
 in the footer and named by the empty state, but appeared nowhere in the overlay,
 so help taught a reader how to create a *list* and not how to create a *task*.
-`src/components/helpoverlay/coverage_test.go` reflects over every keymap struct
-and fails if any binding is missing from the rendered overlay; that guard, not
-review discipline, is what keeps this true.
+`src/components/helpoverlay/coverage_test.go` reflects over every keymap
+struct the catalog documents and fails if any binding is missing from the
+rendered overlay; that guard, not review discipline, is what keeps this true.
 
 Each scope renders one key/description **per line**, not packed side-by-side
 and wrapped — a scope with several keys used to read as a run-on paragraph
@@ -705,6 +705,18 @@ once it wrapped past one line. The catalog is also narrowable with the same
 entry's key and description text; a scope with no matching entry disappears
 entirely rather than leaving an empty heading, so filtering never breaks the
 section separation described above.
+
+A scope exists for keys a reader has to be able to plan around before
+reaching their surface, not for every modal that owns a keyboard. Modals
+whose controls are visible once open — the list-name modal's input and
+collaborative checkbox, the export/import modals' fields — advertise their
+mode-specific keys on their own hint lines, where they are live; duplicating
+those rows in the catalog re-teaches what the modal already says, and a
+second rendering of the same key is a second wording waiting to drift. Their
+generic `enter`/`esc` are the Overlays scope's rows like every overlay's.
+Modals with invisible key behaviour keep a scope: Details' `ctrl+s` save, its
+`y`/`n`-only discard prompt, and its zone-specific cycling cannot be read off
+the screen.
 
 Where a key does something its help text cannot carry, the scope gets a
 one-line **`Note`** (`keys.Scope.Note`) — that is how `L` says it also moves
@@ -799,6 +811,21 @@ emptiness are the same rendering case with two different causes. The active
 mode is shown in the header (mainmenu), low-emphasis, next to the version,
 except while the Archive page is open — that mode describes the Active
 page's task tree, which is not on screen (§5).
+
+**`s` cycles the task tree's sort mode** — manual (the default), priority
+(`high` → `medium` → `low` → `none`), created (newest first), updated (most
+recent first), alpha (A–Z by title, case-insensitive), wrapping back to
+manual (`apptypes.SortMode.Next`). Sorting is display-only bookkeeping:
+`apptypes.SortTasks` orders a copy of the rows at render time and the mode is
+neither written to the store nor persisted across launches, so an agent
+reading the same list over the protocol always sees preorder position
+regardless of what the human has cycled to — one client's viewing preference
+cannot reorder another client's view of the work. Manual exists as a mode
+rather than as the absence of one so that `s` is always a single keystroke
+from wherever the tree has been left back to the canonical order. While a
+non-manual mode is active the footer appends a low-emphasis `⇅ <mode>`
+indicator after the global hints; manual shows nothing, because it is the
+store order every other surface already renders.
 
 A list with no tasks yet auto-shows the inline "new task" input as its only
 row, under the `Pending` header — the input creates a pending task, so it
@@ -1316,9 +1343,10 @@ means all of: `status != 'complete'`, `assignee = ''`, no ancestor assigned
 to a different agent, and no descendant assigned to a different agent.
 Ordering is **`priority` descending** (`high` > `medium` > `low` > `none`),
 then depth-first preorder position — the same order `list_tasks` returns —
-so preorder breaks ties between tasks of equal priority, and the tree the
-TUI and CLI render is never itself re-sorted (§2). This is the *only* place
-priority changes behaviour. Nothing eligible is **not an
+so preorder breaks ties between tasks of equal priority, independent of how
+any client happens to display order (the TUI's `s` sort modes re-order only
+what is drawn, §6 — never the store). This is the *only* place on the tool
+surface where priority changes behaviour. Nothing eligible is **not an
 error**: the tool returns `{ok: false, reason: "no eligible task in this
 list"}`, because an empty board is a normal state, not a failure. Splitting
 this into "read the list, then assign one" would be inherently racy across
@@ -1402,8 +1430,9 @@ existing and new list, human-set only — the same shape `comments_disabled`
 uses (`src/store/migrations/0005_list_collaborative.sql`,
 `store.SetCollaborative`), and, like ownership itself, unenforced on the
 CLI/TUI side: a human may always restructure their own list regardless of
-this flag. A human sets it from the TUI's list-rename modal (`R` in the
-Lists panel); the Lists panel marks a collaborative row so it reads
+this flag. A human sets it from the TUI's list-name modal (`n` new or `R`
+rename in the Lists panel — the toggle is on the modal in both modes); the
+Lists panel marks a collaborative row so it reads
 differently from one an agent cannot restructure (§12). `my_list`'s
 `foreign_lists` carries `collaborative` next to `created_by`, so an agent can
 tell before it tries rather than discovering it from a refusal.

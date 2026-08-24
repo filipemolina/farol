@@ -38,18 +38,22 @@ func bindingsOf(t *testing.T, group string, keymap any) map[string]key.Binding {
 }
 
 // allBindings is every declared binding in the app, across every keymap the
-// overlay is responsible for documenting.
+// overlay is responsible for documenting. Modals that advertise their own
+// mode-specific keys on their own hint lines are deliberately absent — the
+// catalog documents keys a reader must plan around before reaching their
+// surface, not controls already visible once the modal is open
+// (docs/DESIGN.md §5, the catalog-scope rule). ExportModal's tab is one of
+// those; ListNameModal never had a scope for the same reason.
 func allBindings(t *testing.T) map[string]key.Binding {
 	t.Helper()
 	all := map[string]key.Binding{}
 	for group, keymap := range map[string]any{
-		"Global":      keys.Global,
-		"Tree":        keys.Tree,
-		"Lists":       keys.Lists,
-		"Create":      keys.Create,
-		"Details":     keys.Details,
-		"Overlay":     keys.Overlay,
-		"ExportModal": keys.ExportModal,
+		"Global":  keys.Global,
+		"Tree":    keys.Tree,
+		"Lists":   keys.Lists,
+		"Create":  keys.Create,
+		"Details": keys.Details,
+		"Overlay": keys.Overlay,
 	} {
 		for name, b := range bindingsOf(t, group, keymap) {
 			all[name] = b

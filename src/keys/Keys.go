@@ -158,12 +158,14 @@ type ExportModalKeys struct {
 	NextField key.Binding
 }
 
-// ListNameModalKeys act inside the list name modal's Rename mode only: enter
-// and esc (submit/cancel) are the generic Overlay.Submit/Overlay.Cancel
-// bindings every overlay answers to; these two are specific to the
-// collaborative toggle Rename mode adds (docs/DESIGN.md §9, "Tag a list as
-// collaborative") and have no meaning in New-list mode, which is a bare text
-// input.
+// ListNameModalKeys act inside the list name modal, in both New-list and
+// Rename mode: enter and esc (submit/cancel) are the generic
+// Overlay.Submit/Overlay.Cancel bindings every overlay answers to; these two
+// move focus between the name field and the collaborative toggle and flip it
+// (docs/DESIGN.md §9, "Tag a list as collaborative"). The modal advertises
+// all four on its own hint line rather than through a help-overlay scope —
+// its controls are visible once open (docs/DESIGN.md §5, the catalog-scope
+// rule).
 type ListNameModalKeys struct {
 	NextField           key.Binding
 	ToggleCollaborative key.Binding
@@ -237,8 +239,8 @@ type OverlayKeys struct {
 }
 
 var Global = GlobalKeys{
-	NextPanel:        key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "next")),
-	PrevPanel:        key.NewBinding(key.WithKeys("shift+tab"), key.WithHelp("shift+tab", "prev")),
+	NextPanel:        key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "next panel")),
+	PrevPanel:        key.NewBinding(key.WithKeys("shift+tab"), key.WithHelp("shift+tab", "prev panel")),
 	ToggleListsPanel: key.NewBinding(key.WithKeys("L"), key.WithHelp("L", "lists")),
 	Quit:             key.NewBinding(key.WithKeys("q"), key.WithHelp("q", "quit")),
 	ForceQuit:        key.NewBinding(key.WithKeys("ctrl+c"), key.WithHelp("ctrl+c", "quit")),
@@ -258,11 +260,11 @@ var Tree = TaskTreeKeys{
 	Navigate:    key.NewBinding(key.WithKeys("up", "down", "k", "j"), key.WithHelp("↑/↓", "navigate")),
 	Expand:      key.NewBinding(key.WithKeys("right", "l"), key.WithHelp("→/l", "expand")),
 	Collapse:    key.NewBinding(key.WithKeys("left", "h"), key.WithHelp("←/h", "collapse")),
-	Toggle:      key.NewBinding(key.WithKeys("space"), key.WithHelp("space", "toggle")),
+	Toggle:      key.NewBinding(key.WithKeys("space"), key.WithHelp("space", "toggle complete")),
 	OpenDetails: key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "details")),
 	// New is handled at AppModel level (context = focused panel); kept here
 	// so the tree's handler can match it until the wiring moves in step 2.
-	New:      key.NewBinding(key.WithKeys("n"), key.WithHelp("n", "new")),
+	New:      key.NewBinding(key.WithKeys("n"), key.WithHelp("n", "new task")),
 	Delete:   key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "delete")),
 	Outdent:  key.NewBinding(key.WithKeys("["), key.WithHelp("[", "outdent")),
 	Indent:   key.NewBinding(key.WithKeys("]"), key.WithHelp("]", "indent")),
@@ -276,7 +278,7 @@ var Tree = TaskTreeKeys{
 	GoToEnd:   key.NewBinding(key.WithKeys("end", "G"), key.WithHelp("G", "last")),
 	PageUp:    key.NewBinding(key.WithKeys("pgup"), key.WithHelp("pgup", "page up")),
 	PageDown:  key.NewBinding(key.WithKeys("pgdown"), key.WithHelp("pgdown", "page down")),
-	View:      key.NewBinding(key.WithKeys("v"), key.WithHelp("v", "view")),
+	View:      key.NewBinding(key.WithKeys("v"), key.WithHelp("v", "cycle view")),
 }
 
 var Create = CreateKeys{
@@ -368,7 +370,7 @@ var Details = DetailsKeys{
 	// Percentage-mode progress only: ↑/↓ step the value by 5, clamped to
 	// 0–100. Live only while the Progress field has focus and the mode is
 	// percentage, so the modal advertises it only there.
-	PercentNudge: key.NewBinding(key.WithKeys("up", "down"), key.WithHelp("↑/↓", "±5")),
+	PercentNudge: key.NewBinding(key.WithKeys("up", "down"), key.WithHelp("↑/↓", "±5%")),
 	// Help-only, like Overlay.Navigation: digits type straight into the
 	// percentage field, so there is no one keystroke to bind — but without a
 	// hint nothing on screen says the field takes typing at all.
@@ -653,7 +655,8 @@ func Catalog(ctx Context) []Scope {
 				Global.NextPanel, Global.PrevPanel, Global.ToggleListsPanel,
 				Global.PageActive, Global.PageArchived,
 				Global.Back, Global.Quit, Global.ForceQuit, Global.Help,
-				Global.Theme, Global.Filter, Global.Picker, Global.CopyID, Global.About,
+				Global.Theme, Global.Filter, Global.Picker, Global.Sort,
+				Global.CopyID, Global.About,
 			),
 		},
 		{
@@ -665,7 +668,7 @@ func Catalog(ctx Context) []Scope {
 				Tree.Outdent, Tree.Indent, Tree.MoveUp, Tree.MoveDown,
 				Tree.Unassign, Tree.ReleaseList, Tree.View,
 			),
-			Note: "u releases the selected task's assignment and U releases every assignment in the list — an assignment has no expiry, so this is the only thing that frees a task whose agent went away. v cycles the view: both sections (the default), then Pending only, then Complete only.",
+			Note: "v cycles the view: both sections (the default), then Pending only, then Complete only.",
 		},
 		{
 			Title:   "Creating a task",
@@ -680,12 +683,7 @@ func Catalog(ctx Context) []Scope {
 		{
 			Title:   "Lists",
 			Entries: entries(Lists.Navigate, Lists.Select, Lists.New, Lists.Rename, Lists.Delete, Lists.MoveUp, Lists.MoveDown, Lists.Export, Lists.Import, Lists.Archive),
-			Note:    "L shows the lists panel and moves focus into it; tab moves focus back. enter and esc also close it, on the selected list and on cancel respectively. alt+↑/alt+k and alt+↓/alt+j reorder the highlighted list. e exports the store or the highlighted list to a JSON file; i imports lists from a JSON file. A prompts for confirmation, then moves the highlighted list to the Archived Lists page (2); u there restores it.",
-		},
-		{
-			Title:   "Renaming a list",
-			Entries: entries(Overlay.Submit, Overlay.Cancel, ListNameModal.NextField, ListNameModal.ToggleCollaborative),
-			Note:    "tab and space only apply in Rename mode, where the modal also carries the collaborative toggle (any agent may restructure the list); New-list mode is a bare text input.",
+			Note:    "L shows the lists panel and moves focus into it. enter picks the highlighted list and closes the panel; esc closes without picking. A archives after confirmation — restore it with u on the Archived Lists page.",
 		},
 		{
 			Title:   "Details",
@@ -694,7 +692,7 @@ func Catalog(ctx Context) []Scope {
 		{
 			Title:   "Archived Lists",
 			Entries: entries(Global.PageActive, Global.PageArchived, ArchivePage.Navigate, ArchivePage.GoToStart, ArchivePage.GoToEnd, ArchivePage.FocusPreview, ArchivePage.Filter, ArchivePage.Unarchive, ArchivePage.Delete),
-			Note:    "1 and 2 switch between the Active and Archived pages from anywhere. Esc also leaves the Archive page: it commits an open filter first, clears an applied one on the next press, and only then leaves. tab/shift+tab switch keyboard focus between the archived-list column and the task preview beside it; ↑/↓ and home/end/g/G scroll whichever one currently has it. d prompts for confirmation before permanently deleting a list and its tasks; u prompts for confirmation before restoring one to normal discovery.",
+			Note:    "esc leaves the page last: it commits an open filter first, clears an applied one on the next press, and only then leaves. ↑/↓ and home/end/g/G scroll whichever column currently has focus.",
 		},
 		{
 			Title:   "Overlays",
@@ -721,7 +719,7 @@ func pressableNow(ctx Context) []key.Binding {
 	// When a modal owns the keyboard, or the user is typing a create or
 	// filter input, only the always-available keys remain pressable.
 	if !ctx.HasModal && !ctx.Creating && !ctx.Filtering {
-		live = append(live, Global.Back, Global.Theme, Global.ToggleListsPanel, Global.PageActive, Global.PageArchived, Global.Filter, Global.Picker, Global.CopyID)
+		live = append(live, Global.Back, Global.Theme, Global.ToggleListsPanel, Global.PageActive, Global.PageArchived, Global.Filter, Global.Picker, Global.Sort, Global.CopyID)
 	}
 
 	// shift+tab is tab's twin: live wherever tab is.

@@ -54,14 +54,16 @@ The component never hardcodes a keystroke. The binding is the single declaration
 
 ## The help overlay
 
-`?` opens the help overlay, and it lists **every key in the app on every screen** — not the keys live on the screen it was opened from. `keys.Catalog(ctx)` builds it from the same binding structs the handlers match against, grouped into scopes (`Global`, `Task Tree`, `Creating a task`, `Filtering`, `Lists`, `Renaming a list`, `Details`, `Archived Lists`, `Overlays`).
+`?` opens the help overlay, and it lists **every key in the app on every screen** — not the keys live on the screen it was opened from. `keys.Catalog(ctx)` builds it from the same binding structs the handlers match against, grouped into scopes (`Global`, `Task Tree`, `Creating a task`, `Filtering`, `Lists`, `Details`, `Archived Lists`, `Overlays`).
 
 Two design decisions make it a reference rather than a corner description:
 
 - **Keys the user cannot press right now are dimmed, not omitted** — a dimmed row reads as "not here", an omitted one as "removed". Availability is carried per-entry (`Entry.Available`).
 - **Every scope is present on every screen.** Scopes used to come and go with the context, which made the overlay useless for its actual job: a key you can only read about once you have already found the surface it belongs to is not documented at all. The worst form of that failure shipped once — `n` (new task) was bound, handled, advertised in the footer, and named by the empty state, but appeared nowhere in the overlay.
 
-The guard that keeps this true is mechanical, not review discipline: **`src/components/helpoverlay/coverage_test.go` reflects over every keymap struct and fails if any binding is missing from the rendered overlay.** Adding a field to a keymap struct without documenting it fails the test on its own.
+A scope exists for keys a reader has to plan around before reaching their surface, not for every modal that owns a keyboard. Modals whose controls are visible once open — the list-name modal's input and collaborative checkbox, the export/import modals' fields — advertise their mode-specific keys on their own hint lines; duplicating those rows in the catalog re-teaches what the modal already says. Their generic `enter`/`esc` are the Overlays scope's rows like every overlay's. Modals with invisible key behaviour keep a scope (Details). That is why there is no "Renaming a list" scope.
+
+The guard that keeps this true is mechanical, not review discipline: **`src/components/helpoverlay/coverage_test.go` reflects over every keymap struct the catalog documents and fails if any binding is missing from the rendered overlay.** Adding a field to a keymap struct without documenting it fails the test on its own.
 
 Where a key does something its help text cannot carry, the scope gets a one-line `Note` (`keys.Scope.Note`) — that is how `L` says it also moves focus into the panel it reveals, and how the Overlays scope says the Details discard prompt answers to `y`/`n` alone.
 
