@@ -499,7 +499,7 @@ func (m *Model) renderFilterRow(row apptypes.Row, width int, dimmed bool, matche
 	}
 	// Highlight matched substring inside matching rows, using
 	// sahilm/fuzzy's MatchedIndexes — same fuzzy matching used
-	// by the F picker (searchpicker) and matchVisible. The
+	// by the Search page (searchpage) and matchVisible. The
 	// fuzzy.Find call in matchVisible already computed these
 	// indexes, reusing the same data path.
 	return m.renderRow(row, width, bg, matchedIndexes)

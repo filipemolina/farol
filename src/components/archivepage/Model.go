@@ -330,6 +330,13 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, keys.Global.PageActive):
 		return m, cmds.CloseArchivePage(nil)
 
+	// F opens the cross-list Search page from here too: the Archive page owns
+	// every keypress, so it must match F the same way it matches 1 (the other
+	// way off this page) — the global F handler never runs while the page is
+	// open, so without this F would be swallowed (docs/DESIGN.md §5).
+	case key.Matches(msg, keys.Global.Picker):
+		return m, cmds.OpenSearchPage()
+
 	case key.Matches(msg, keys.ArchivePage.Filter):
 		// The filter row lives in the archived-list column, so typing into
 		// it always brings that column's focus back — the same way pressing

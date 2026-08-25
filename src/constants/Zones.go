@@ -13,6 +13,11 @@ const (
 	// entered and left by explicit open/close transitions, not a panel Tasks
 	// shares focus with.
 	COMPONENT_ARCHIVE_PAGE = 4
+	// COMPONENT_SEARCH_PAGE is the cross-list Search page (docs/DESIGN.md §5),
+	// the picker promoted from a modal to a page. Like the Archive page it is a
+	// full-body takeover entered and left by explicit open/close transitions
+	// (F, or esc / a digit), never in the tab/shift+tab cycle.
+	COMPONENT_SEARCH_PAGE = 5
 )
 
 // FocusableComponents are the component ids tab / shift+tab cycle

@@ -1,4 +1,4 @@
-package searchpicker
+package searchpage
 
 import (
 	"github.com/filipemolina/farol/src/store"
@@ -8,18 +8,20 @@ import (
 // rank runs store.SearchTasks across all lists and orders the results the
 // same way the CLI's rankSearch does (step 5): title matches first, ranked
 // by fuzzy score, then candidates that matched only on notes in store
-// order. Each result carries its list's name for context.
-func rank(s *store.Store, query string) []Result {
+// order. Each result carries its list's name for context. A store error is
+// returned so the page can surface it in the error tier (docs/DESIGN.md §12)
+// rather than silently dropping the results.
+func rank(s *store.Store, query string) ([]Result, error) {
 	if query == "" {
-		return nil
+		return nil, nil
 	}
 
 	candidates, err := s.SearchTasks(query, nil)
 	if err != nil {
-		return nil // picker surface for a search failure; caller shows nothing
+		return nil, err
 	}
 	if len(candidates) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	// Prepend the notes fallback so a notes-only hit still shows, but title
@@ -44,7 +46,7 @@ func rank(s *store.Store, query string) []Result {
 		}
 		out = append(out, Result{TaskID: c.ID, Title: c.Title, ListID: c.ListID, ListName: lists[c.ListID].Name, Archived: lists[c.ListID].Archived})
 	}
-	return out
+	return out, nil
 }
 
 // listContext is the subset of a list the result row needs: its display name
@@ -62,7 +64,7 @@ type listContext struct {
 // must still carry its list's name — using store.ListLists here, which
 // excludes archived lists, would render those results as " › Title" (a
 // misleading "child of nothing" indent) and leave no way to tell the list
-// apart. Archived is derived from the list's own ArchivedAt, so the picker
+// apart. Archived is derived from the list's own ArchivedAt, so the page
 // can mark it and route Enter to the Archive page.
 func allLists(s *store.Store) map[string]listContext {
 	lists, err := s.ListAllLists()

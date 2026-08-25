@@ -238,6 +238,20 @@ type OverlayKeys struct {
 	Navigation key.Binding
 }
 
+// SearchPageKeys act inside the Search page: submitting the highlighted
+// result, cancelling back to the Active page, and moving the result cursor.
+// Navigation is the arrow keys only — j/k stay query characters because the
+// text input owns them (docs/DESIGN.md §5) — so this is a distinct binding
+// from Overlay.Navigation (which also binds k/j) rather than a reuse of it.
+// Cancel carries esc so the page's footer trio (navigate/open/back) comes
+// from one struct; Global.Back remains the esc binding every other surface's
+// ladder claims through.
+type SearchPageKeys struct {
+	Submit   key.Binding
+	Cancel   key.Binding
+	Navigate key.Binding
+}
+
 var Global = GlobalKeys{
 	NextPanel:        key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "next panel")),
 	PrevPanel:        key.NewBinding(key.WithKeys("shift+tab"), key.WithHelp("shift+tab", "prev panel")),
@@ -248,7 +262,7 @@ var Global = GlobalKeys{
 	Help:             key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "help")),
 	Theme:            key.NewBinding(key.WithKeys("T"), key.WithHelp("T", "theme")),
 	Filter:           key.NewBinding(key.WithKeys("/"), key.WithHelp("/", "filter")),
-	Picker:           key.NewBinding(key.WithKeys("F"), key.WithHelp("F", "search")),
+	Picker:           key.NewBinding(key.WithKeys("F"), key.WithHelp("F", "search page")),
 	CopyID:           key.NewBinding(key.WithKeys("ctrl+y"), key.WithHelp("ctrl+y", "copy id")),
 	Sort:             key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "sort")),
 	About:            key.NewBinding(key.WithKeys("a"), key.WithHelp("a", "about")),
@@ -430,6 +444,12 @@ var Overlay = OverlayKeys{
 	Navigation: key.NewBinding(key.WithKeys("up", "down", "k", "j"), key.WithHelp("↑/↓", "navigate")),
 }
 
+var SearchPage = SearchPageKeys{
+	Submit:   key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "open")),
+	Cancel:   key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "back")),
+	Navigate: key.NewBinding(key.WithKeys("up", "down"), key.WithHelp("↑/↓", "navigate")),
+}
+
 // Context is what the help overlay and keybinding bar know about the screen:
 // enough to decide which bindings are live, and nothing more.
 type Context struct {
@@ -447,6 +467,12 @@ type Context struct {
 	// While it is, the Archive page owns the keyboard the same way Details
 	// does (docs/DESIGN.md §5): only its own bindings plus Esc are live.
 	ArchivePageVisible bool
+	// SearchPageVisible reports whether the cross-list Search page is open.
+	// While it is, the Search page owns the keyboard the same way the Archive
+	// page does (docs/DESIGN.md §5): only its own bindings are live, and the
+	// footer stays live (it advertises navigate / open / back) rather than
+	// blanking the way the Archive page's does.
+	SearchPageVisible bool
 	// TaskTreeEmpty reports whether the active list has no visible rows.
 	TaskTreeEmpty bool
 	// HasActiveList reports whether a list is selected at all.
@@ -495,6 +521,18 @@ func Active(ctx Context) []key.Binding {
 			ArchivePage.FocusPreview,
 			ArchivePage.Filter, ArchivePage.Unarchive, ArchivePage.Delete,
 			Global.Back, Global.PageActive,
+		}
+	}
+
+	// The Search page owns the keyboard while open, the same way the Archive
+	// page does just above: only its own bindings are live — no task-tree,
+	// Lists, tab, theme, or panel-toggle key acts (docs/DESIGN.md §5). The
+	// footer stays live here (unlike the Archive page, whose footer blanks),
+	// so these three are what the keybinding bar advertises: navigate the
+	// results, open the highlighted one, back to Active.
+	if ctx.SearchPageVisible {
+		return []key.Binding{
+			SearchPage.Navigate, SearchPage.Submit, SearchPage.Cancel,
 		}
 	}
 
@@ -708,8 +746,9 @@ func Catalog(ctx Context) []Scope {
 func pressableNow(ctx Context) []key.Binding {
 	// While Details or the Archive page owns the keyboard, only its own
 	// bindings (Active returns them plus Esc) and the emergency ForceQuit
-	// are live — no globals.
-	if ctx.DetailsPanelVisible || ctx.ArchivePageVisible {
+	// are live — no globals. The Search page is the same, except its footer
+	// stays live (it advertises its own bindings) rather than blanking.
+	if ctx.DetailsPanelVisible || ctx.ArchivePageVisible || ctx.SearchPageVisible {
 		return append(Active(ctx), Global.ForceQuit)
 	}
 

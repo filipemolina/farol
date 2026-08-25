@@ -25,6 +25,11 @@ type Model struct {
 	// AppModel itself reacts to, via the ordinary component fan-out — there
 	// is no separate broadcast for it.
 	archiveOpen bool
+	// searchOpen tracks the Search page (docs/DESIGN.md §5). Search has no tab
+	// of its own — it is a visit opened from either page and left by esc or a
+	// digit — so while it is open neither tab is highlighted. mainmenu learns
+	// this from the same Open/CloseSearchPageMsg AppModel reacts to.
+	searchOpen bool
 }
 
 // Init satisfies tea.Model.
@@ -47,6 +52,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.archiveOpen = true
 	case cmds.CloseArchivePageMsg:
 		m.archiveOpen = false
+	case cmds.OpenSearchPageMsg:
+		m.searchOpen = true
+	case cmds.CloseSearchPageMsg:
+		m.searchOpen = false
 	}
 	return m, nil
 }

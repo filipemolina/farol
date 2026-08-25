@@ -1,4 +1,4 @@
-package searchpicker
+package searchpage
 
 import (
 	"path/filepath"
@@ -18,9 +18,10 @@ func testStore(t *testing.T) *store.Store {
 	return s
 }
 
-// rank orders title matches first (by fuzzy score), then notes-only hits — the
-// same decision the CLI's rankSearch makes. Each result carries its list's
-// name so the picker can render "<list> › <title>" without a second lookup.
+// rank orders title matches first (by fuzzy score), then notes-only hits —
+// the same decision the CLI's rankSearch makes. Each result carries its
+// list's name so the page can render "<list> › <title>" without a second
+// lookup.
 func TestRankTitlesFirstThenNotes(t *testing.T) {
 	s := testStore(t)
 	lid, err := s.CreateList("Errands", "")
@@ -36,7 +37,10 @@ func TestRankTitlesFirstThenNotes(t *testing.T) {
 		t.Fatalf("create notes task: %v", err)
 	}
 
-	results := rank(s, "milk")
+	results, err := rank(s, "milk")
+	if err != nil {
+		t.Fatalf("rank: %v", err)
+	}
 	// "Buy milk" is a title match; "Groceries" only matches via notes.
 	if len(results) != 2 {
 		t.Fatalf("rank returned %d results, want 2", len(results))
@@ -47,12 +51,25 @@ func TestRankTitlesFirstThenNotes(t *testing.T) {
 
 	for _, r := range results {
 		if r.ListName != "Errands" {
-			t.Errorf("result %q list name = %q, want Errands (context for the picker)", r.Title, r.ListName)
+			t.Errorf("result %q list name = %q, want Errands (context for the row)", r.Title, r.ListName)
 		}
 	}
 }
 
-// The picker's jump needs the task's list id so AppModel can switch to it;
+// An empty query searches nothing: the page shows its guidance empty state,
+// not every task in the store.
+func TestRankEmptyQueryReturnsNoResults(t *testing.T) {
+	s := testStore(t)
+	results, err := rank(s, "")
+	if err != nil {
+		t.Fatalf("rank: %v", err)
+	}
+	if len(results) != 0 {
+		t.Errorf("rank(\"\") returned %d results, want 0", len(results))
+	}
+}
+
+// The page's jump needs the task's list id so AppModel can switch to it;
 // rank must carry that through.
 func TestRankCarriesListID(t *testing.T) {
 	s := testStore(t)
@@ -62,7 +79,10 @@ func TestRankCarriesListID(t *testing.T) {
 	}
 	tid, _ := s.CreateTask(lid, "unicorn", nil, "")
 
-	results := rank(s, "unicorn")
+	results, err := rank(s, "unicorn")
+	if err != nil {
+		t.Fatalf("rank: %v", err)
+	}
 	if len(results) == 0 {
 		t.Fatal("expected at least one result")
 	}
@@ -74,10 +94,9 @@ func TestRankCarriesListID(t *testing.T) {
 // Regression: a result from an ARCHIVED list must still carry its list name
 // and be flagged Archived. Before the fix rank resolved names via
 // store.ListLists, which excludes archived lists, so an archived-list result
-// rendered as the anonymous, misleading " › Title" — the "which list is this
-// from" confusion the user reported. listNames now reads ListAllLists, so the
-// Archived flag (which the picker uses to mark the row and route Enter to the
-// Archive page) can be derived.
+// rendered as the anonymous, misleading " › Title". allLists now reads
+// ListAllLists, so the Archived flag (which the page uses to mark the row and
+// route Enter to the Archive page) can be derived.
 func TestRankNamesArchivedListAndFlagsIt(t *testing.T) {
 	s := testStore(t)
 	lid, err := s.CreateList("Farol v0.4", "")
@@ -91,7 +110,10 @@ func TestRankNamesArchivedListAndFlagsIt(t *testing.T) {
 		t.Fatalf("archive list: %v", err)
 	}
 
-	results := rank(s, "collaborative")
+	results, err := rank(s, "collaborative")
+	if err != nil {
+		t.Fatalf("rank: %v", err)
+	}
 	if len(results) != 1 {
 		t.Fatalf("rank returned %d results, want 1", len(results))
 	}

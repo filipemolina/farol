@@ -27,7 +27,7 @@ func TestArchiveKeyOpensPage(t *testing.T) {
 
 	m = refresh(t, m, tea.KeyPressMsg{Text: "2"})
 
-	if !m.archivePageVisible {
+	if !m.archivePageVisible() {
 		t.Fatal("2 did not open the Archive page")
 	}
 	if m.focusedZone != constants.COMPONENT_ARCHIVE_PAGE {
@@ -48,7 +48,7 @@ func TestPageActiveKeyClosesArchivePage(t *testing.T) {
 		m = refresh(t, m, cmd())
 	}
 
-	if m.archivePageVisible {
+	if m.archivePageVisible() {
 		t.Fatal("1 did not close the Archive page")
 	}
 	if m.focusedZone != constants.COMPONENT_TASK_TREE {
@@ -59,7 +59,7 @@ func TestPageActiveKeyClosesArchivePage(t *testing.T) {
 func TestOpenArchivePageShowsAndFocuses(t *testing.T) {
 	m := openArchivePage(t, 120, 40)
 
-	if !m.archivePageVisible {
+	if !m.archivePageVisible() {
 		t.Fatal("Archive page is not visible after open")
 	}
 	if m.focusedZone != constants.COMPONENT_ARCHIVE_PAGE {
@@ -100,7 +100,7 @@ func TestArchivePageEscReturnsToTasks(t *testing.T) {
 		m = refresh(t, m, cmd())
 	}
 
-	if m.archivePageVisible {
+	if m.archivePageVisible() {
 		t.Fatal("esc did not close the Archive page")
 	}
 	if m.focusedZone != constants.COMPONENT_TASK_TREE {
@@ -121,7 +121,7 @@ func TestArchivePageOwnsKeyboard(t *testing.T) {
 	if m.activeModal != nil {
 		t.Fatal("a global key opened a modal while the Archive page owned the keyboard")
 	}
-	if !m.archivePageVisible {
+	if !m.archivePageVisible() {
 		t.Fatal("the Archive page closed on an unrelated keypress")
 	}
 }
@@ -164,7 +164,7 @@ func TestArchiveDeleteOpensModalOverThePage(t *testing.T) {
 	if !strings.Contains(body, listName) {
 		t.Errorf("confirm dialog does not name the list %q:\n%s", listName, body)
 	}
-	if !m.archivePageVisible {
+	if !m.archivePageVisible() {
 		t.Error("the Archive page closed underneath the modal")
 	}
 	pageBody := ansi.Strip(m.renderBody())
@@ -177,7 +177,7 @@ func TestArchiveDeleteOpensModalOverThePage(t *testing.T) {
 	if m.activeModal != nil {
 		t.Error("esc should have closed the confirm modal")
 	}
-	if !m.archivePageVisible {
+	if !m.archivePageVisible() {
 		t.Error("esc closing the modal should not also close the Archive page underneath it")
 	}
 	if _, err := m.store.GetList(listID); err != nil {
@@ -256,7 +256,7 @@ func TestArchiveUnarchiveOpensModalOverThePage(t *testing.T) {
 	if !strings.Contains(body, archived.Name) {
 		t.Errorf("confirm dialog does not name the list %q:\n%s", archived.Name, body)
 	}
-	if !m.archivePageVisible {
+	if !m.archivePageVisible() {
 		t.Error("the Archive page closed underneath the modal")
 	}
 
@@ -265,7 +265,7 @@ func TestArchiveUnarchiveOpensModalOverThePage(t *testing.T) {
 	if m.activeModal != nil {
 		t.Error("esc should have closed the confirm modal")
 	}
-	if !m.archivePageVisible {
+	if !m.archivePageVisible() {
 		t.Error("esc closing the modal should not also close the Archive page underneath it")
 	}
 	stillArchived, err := m.store.GetList(listID)

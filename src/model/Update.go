@@ -14,7 +14,6 @@ import (
 	"github.com/filipemolina/farol/src/components/helpoverlay"
 	"github.com/filipemolina/farol/src/components/importexportmodal"
 	"github.com/filipemolina/farol/src/components/listnamemodal"
-	"github.com/filipemolina/farol/src/components/searchpicker"
 	"github.com/filipemolina/farol/src/components/themepickermodal"
 	"github.com/filipemolina/farol/src/config"
 	"github.com/filipemolina/farol/src/constants"
@@ -77,11 +76,17 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// rule is identical, so it sits right after the Details check. Only
 	// keypresses are captured here; refresh, poll, and layout messages still
 	// fall through to the normal handlers and the component fan-out.
-	if m.archivePageVisible {
+	if m.archivePageVisible() {
 		if _, ok := msg.(tea.KeyPressMsg); ok {
 			var archiveCmd tea.Cmd
 			m.components.ArchivePage, archiveCmd = m.components.ArchivePage.Update(msg)
 			return m, archiveCmd
+		}
+	} else if m.searchPageVisible() {
+		if _, ok := msg.(tea.KeyPressMsg); ok {
+			var searchCmd tea.Cmd
+			m.components.SearchPage, searchCmd = m.components.SearchPage.Update(msg)
+			return m, searchCmd
 		}
 	}
 
@@ -202,7 +207,7 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, keys.Global.Picker):
 			if !keyboardOwned() {
-				finalCmds = append(finalCmds, cmds.OpenSearchPicker())
+				finalCmds = append(finalCmds, cmds.OpenSearchPage())
 			}
 
 		// tab/shift+tab are focus keys and cycle the panels — except while the
@@ -393,8 +398,14 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Keep the open Archive page current with external CLI archive/
 		// unarchive writes, the same live-refresh contract every other open
 		// surface gets (docs/DESIGN.md §7).
-		if m.archivePageVisible {
+		if m.archivePageVisible() {
 			finalCmds = append(finalCmds, cmds.RefreshArchivedLists(m.store))
+		}
+		// Keep the open Search page current: re-run its persisted query so a
+		// non-empty query's results never go stale behind the cursor
+		// (docs/DESIGN.md §5).
+		if m.searchPageVisible() {
+			finalCmds = append(finalCmds, cmds.RefreshSearch())
 		}
 
 	case cmds.AnimTickMsg:
@@ -520,8 +531,20 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case cmds.OpenAboutModalMsg:
 		m.activeModal = aboutmodal.New(m.terminalWidth)
 
-	case cmds.OpenSearchPickerMsg:
-		m.activeModal = searchpicker.New(m.store, m.terminalWidth, m.terminalHeight)
+	case cmds.OpenSearchPageMsg:
+		// The F key (keys.Global.Picker) emits this. The Search page is a
+		// full-body takeover, not a modal: the component is already in the
+		// component set, so this only flips the page enum and moves focus onto
+		// it. The query/results/cursor persist in the component, so re-entering
+		// shows the search as it was left; a RefreshSearch re-runs the
+		// persisted query so results are fresh (docs/DESIGN.md §5).
+		m.page = PageSearch
+		m.focusedZone = constants.COMPONENT_SEARCH_PAGE
+		finalCmds = append(finalCmds,
+			cmds.SetFocus(constants.COMPONENT_SEARCH_PAGE),
+			m.footerContextCmd(),
+			cmds.RefreshSearch(),
+		)
 
 	case cmds.OpenExportModalMsg:
 		m.activeModal = importexportmodal.NewExport(m.store, m.highlightedListIDptr(), m.terminalWidth)
@@ -584,7 +607,7 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// AppModel drives when this query runs (open, and every poll tick
 		// below while the page stays open), the same way it drives
 		// RefreshLists/RefreshTasks; the component only renders what arrives.
-		m.archivePageVisible = true
+		m.page = PageArchived
 		m.focusedZone = constants.COMPONENT_ARCHIVE_PAGE
 		finalCmds = append(finalCmds,
 			cmds.SetFocus(constants.COMPONENT_ARCHIVE_PAGE),
@@ -593,7 +616,7 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		)
 
 	case cmds.OpenArchivedTaskMsg:
-		// The search picker's Enter on a result whose list is archived. Same
+		// The search page's Enter on a result whose list is archived. Same
 		// open shape as OpenArchivePageMsg, plus a reveal request handed to
 		// the page so it selects the result's list (scrolling to it) and
 		// highlights the task in the preview — an archived list cannot become
@@ -601,7 +624,7 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// page". The reveal is sent after the open so the page is alive when
 		// it arrives; if the list isn't loaded yet the page applies it once
 		// the archived set refreshes.
-		m.archivePageVisible = true
+		m.page = PageArchived
 		m.focusedZone = constants.COMPONENT_ARCHIVE_PAGE
 		finalCmds = append(finalCmds,
 			cmds.SetFocus(constants.COMPONENT_ARCHIVE_PAGE),
@@ -614,7 +637,23 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// The Archive page asked to close (esc). Only AppModel changes
 		// visibility and focus, mirroring CloseDetailsSideMsg: hide the page,
 		// return focus to the task tree, then run any follow-up command.
-		m.archivePageVisible = false
+		m.page = PageActive
+		m.focusedZone = constants.COMPONENT_TASK_TREE
+		finalCmds = append(finalCmds,
+			cmds.SetFocus(constants.COMPONENT_TASK_TREE),
+			m.footerContextCmd(),
+		)
+		if msg.Follow != nil {
+			finalCmds = append(finalCmds, msg.Follow)
+		}
+
+	case cmds.CloseSearchPageMsg:
+		// The Search page asked to close (esc, or a digit that lands on
+		// Active). Only AppModel changes the page enum and focus, mirroring
+		// CloseArchivePageMsg: switch back to Active, return focus to the
+		// task tree, then run the follow-up (a JumpToTask / OpenArchivedTask
+		// the page handed off behind its own close).
+		m.page = PageActive
 		m.focusedZone = constants.COMPONENT_TASK_TREE
 		finalCmds = append(finalCmds,
 			cmds.SetFocus(constants.COMPONENT_TASK_TREE),
@@ -871,14 +910,15 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// Forward the message to every component. TaskPanel forwards to the tree
 	// and input controls after deriving their shared Tasks-surface state.
-	var menuCmd, barCmd, listsCmd, tasksCmd, detailsCmd, archiveCmd tea.Cmd
+	var menuCmd, barCmd, listsCmd, tasksCmd, detailsCmd, archiveCmd, searchCmd tea.Cmd
 	m.components.MainMenu, menuCmd = m.components.MainMenu.Update(msg)
 	m.components.KeybindingBar, barCmd = m.components.KeybindingBar.Update(msg)
 	m.components.ListsPanel, listsCmd = m.components.ListsPanel.Update(msg)
 	m.components.TaskPanel, tasksCmd = m.components.TaskPanel.Update(msg)
 	m.components.DetailsPanel, detailsCmd = m.components.DetailsPanel.Update(msg)
 	m.components.ArchivePage, archiveCmd = m.components.ArchivePage.Update(msg)
-	finalCmds = append(finalCmds, menuCmd, barCmd, listsCmd, tasksCmd, detailsCmd, archiveCmd)
+	m.components.SearchPage, searchCmd = m.components.SearchPage.Update(msg)
+	finalCmds = append(finalCmds, menuCmd, barCmd, listsCmd, tasksCmd, detailsCmd, archiveCmd, searchCmd)
 
 	return m, tea.Batch(finalCmds...)
 }

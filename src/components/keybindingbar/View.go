@@ -27,8 +27,10 @@ func (m Model) View() tea.View {
 	// keeps its stale value while the page is open (the page replaces the
 	// body outright rather than recomputing the layout), so a live tab/shift+tab
 	// hint here could describe a panel that is not actually reachable right
-	// now. The bar still paints its full-width background so the layout
-	// height never moves.
+	// now. The Search page is the exception: its footer stays live (it
+	// advertises navigate / open / back from the page's own bindings) rather
+	// than blanking, so the bar still paints its full-width background and
+	// renders the hints below.
 	if m.ctx.DetailsPanelVisible || m.ctx.ArchivePageVisible {
 		return tea.NewView(appstyles.FillBackground(appstyles.Active.BackgroundContent,
 			barStyle(m.terminalWidth).Render("")))

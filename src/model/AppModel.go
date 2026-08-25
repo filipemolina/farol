@@ -9,11 +9,25 @@ import (
 	"github.com/filipemolina/farol/src/components/keybindingbar"
 	"github.com/filipemolina/farol/src/components/listspanel"
 	"github.com/filipemolina/farol/src/components/mainmenu"
+	"github.com/filipemolina/farol/src/components/searchpage"
 	"github.com/filipemolina/farol/src/components/taskspanel"
 	"github.com/filipemolina/farol/src/config"
 	"github.com/filipemolina/farol/src/constants"
 	"github.com/filipemolina/farol/src/keys"
 	"github.com/filipemolina/farol/src/store"
+)
+
+// Page is the current top-level body surface. Exactly one page renders at a
+// time; adding a page is one new value, not one new boolean threaded through
+// every check (docs/DESIGN.md §5). The Search page replaced the old
+// archivePageVisible bool so the two full-body takeovers (Archive, Search)
+// are one closed set rather than a lattice of booleans.
+type Page int
+
+const (
+	PageActive Page = iota
+	PageArchived
+	PageSearch
 )
 
 // AppModel is the top-level Bubble Tea model: it owns the store handle, the
@@ -42,18 +56,17 @@ type AppModel struct {
 	// transitions, and starts hidden with an empty task id.
 	detailsPanelVisible bool
 	detailsTaskID       string
-	// archivePageVisible tracks the Archived Lists page, the exclusive
-	// full-body surface that replaces Tasks/Lists (docs/DESIGN.md §5).
-	// Unlike Details it is not a centered modal: while it is true, renderBody
-	// returns the archive page's own View instead of the Tasks/Lists split,
-	// and it owns the keyboard the same way Details does. It carries no task
-	// id — it has nothing analogous to detailsTaskID to track.
-	archivePageVisible bool
-	activeListID       string
-	lists              []apptypes.ListSummary
-	activeModal        tea.Model
-	lastError          string
-	sortMode           apptypes.SortMode
+	// page is the current top-level body surface (docs/DESIGN.md §5). It
+	// replaces the old archivePageVisible bool: the Archive and Search pages
+	// are one closed set of full-body takeovers, and exactly one renders at a
+	// time. archivePageVisible() and searchPageVisible() read it so call
+	// sites stay descriptive.
+	page         Page
+	activeListID string
+	lists        []apptypes.ListSummary
+	activeModal  tea.Model
+	lastError    string
+	sortMode     apptypes.SortMode
 
 	// animFrame is the current spinner frame (0..7), advanced by AnimTickMsg.
 	// animActive tracks whether any agent claim is live — the spinner only
@@ -74,6 +87,7 @@ type AppModel struct {
 		TaskPanel     tea.Model
 		DetailsPanel  tea.Model
 		ArchivePage   tea.Model
+		SearchPage    tea.Model
 	}
 }
 
@@ -100,8 +114,17 @@ func GetInitialModel(s *store.Store, cfg config.Config) tea.Model {
 	m.components.TaskPanel = taskspanel.New(s, "")
 	m.components.DetailsPanel = detailspanel.New(s)
 	m.components.ArchivePage = archivepage.New(s)
+	m.components.SearchPage = searchpage.New(s)
 	return m
 }
+
+// archivePageVisible reports whether the Archived Lists page is the current
+// page (docs/DESIGN.md §5).
+func (m AppModel) archivePageVisible() bool { return m.page == PageArchived }
+
+// searchPageVisible reports whether the cross-list Search page is the current
+// page (docs/DESIGN.md §5).
+func (m AppModel) searchPageVisible() bool { return m.page == PageSearch }
 
 // helpContext snapshots what the help overlay and keybinding bar need to
 // know about the screen. Keeping it in one place keeps the footer and the
@@ -120,7 +143,8 @@ func (m AppModel) helpContext() keys.Context {
 		Focused:             m.focusedZone,
 		ListsPanelVisible:   m.listsPanelRendered(),
 		DetailsPanelVisible: m.detailsPanelVisible,
-		ArchivePageVisible:  m.archivePageVisible,
+		ArchivePageVisible:  m.archivePageVisible(),
+		SearchPageVisible:   m.searchPageVisible(),
 		TaskTreeEmpty:       m.taskTreeEmpty(),
 		HasActiveList:       m.activeListID != "",
 		Creating:            creating,
@@ -152,7 +176,7 @@ func (m AppModel) createInputLive() bool {
 // current context.
 func (m AppModel) footerContextCmd() tea.Cmd {
 	ctx := m.helpContext()
-	return cmds.SetFooterContext(ctx.Focused, ctx.ListsPanelVisible, ctx.DetailsPanelVisible, ctx.ArchivePageVisible, ctx.TaskTreeEmpty, ctx.HasActiveList, ctx.Creating, ctx.Filtering, ctx.HasModal, m.sortMode)
+	return cmds.SetFooterContext(ctx.Focused, ctx.ListsPanelVisible, ctx.DetailsPanelVisible, ctx.ArchivePageVisible, ctx.SearchPageVisible, ctx.TaskTreeEmpty, ctx.HasActiveList, ctx.Creating, ctx.Filtering, ctx.HasModal, m.sortMode)
 }
 
 // listsPanelRendered reports whether the Lists panel actually occupies width

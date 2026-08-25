@@ -34,7 +34,7 @@ func TestOpenArchivedTaskMsgOpensArchivePageNotActiveList(t *testing.T) {
 
 	m = refresh(t, m, cmds.OpenArchivedTaskMsg{TaskID: "some-task", ListID: archived})
 
-	if !m.archivePageVisible {
+	if !m.archivePageVisible() {
 		t.Fatal("OpenArchivedTaskMsg should open the Archive page")
 	}
 	if m.focusedZone != constants.COMPONENT_ARCHIVE_PAGE {

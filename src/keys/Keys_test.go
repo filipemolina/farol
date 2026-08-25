@@ -348,3 +348,78 @@ func TestActiveTaskTreeOmitsTabWithoutListsPanel(t *testing.T) {
 		t.Errorf("Active must advertise tab while the lists panel is visible")
 	}
 }
+
+// The Search page's bindings are part of docs/DESIGN.md §5 — pin them like
+// the globals so a refactor cannot silently move a key.
+func TestSearchPageBindingsAreFixed(t *testing.T) {
+	cases := []struct {
+		name string
+		b    key.Binding
+		want []string
+	}{
+		{"Submit", SearchPage.Submit, []string{"enter"}},
+		{"Cancel", SearchPage.Cancel, []string{"esc"}},
+		{"Navigate", SearchPage.Navigate, []string{"up", "down"}},
+	}
+	for _, tc := range cases {
+		got := tc.b.Keys()
+		if len(got) != len(tc.want) {
+			t.Errorf("%s binds %v, want %v", tc.name, got, tc.want)
+			continue
+		}
+		for i := range got {
+			if got[i] != tc.want[i] {
+				t.Errorf("%s binds %v, want %v", tc.name, got, tc.want)
+			}
+		}
+	}
+}
+
+// While the Search page is open its footer stays live — unlike the Archive
+// page, whose footer blanks — advertising exactly navigate/open/back from the
+// page's own bindings (docs/DESIGN.md §5).
+func TestActiveReturnsSearchPageBindingsWhenVisible(t *testing.T) {
+	ctx := Context{
+		Focused:           constants.COMPONENT_SEARCH_PAGE,
+		SearchPageVisible: true,
+	}
+	bindings := Active(ctx)
+
+	want := []key.Binding{SearchPage.Navigate, SearchPage.Submit, SearchPage.Cancel}
+	if len(bindings) != len(want) {
+		t.Fatalf("expected %d Search page bindings, got %d: %v", len(want), len(bindings), bindings)
+	}
+	for _, b := range bindings {
+		if !containsBinding(want, b) {
+			t.Errorf("unexpected binding in Search page context: %s", b.Help().Key)
+		}
+	}
+	for _, banned := range []key.Binding{
+		Global.NextPanel, Global.Picker, Global.Theme, Global.ToggleListsPanel,
+		Global.PageArchived,
+	} {
+		if containsBinding(bindings, banned) {
+			t.Errorf("Search page context wrongly advertises %q", banned.Help().Key)
+		}
+	}
+}
+
+// The Search page owns the keyboard while open: past its own trio only the
+// emergency ForceQuit is pressable — no quit, no theme, no panel toggle
+// (docs/DESIGN.md §5; the digits are matched inside the page's own handler).
+func TestPressableNowSearchPageOmitsGlobals(t *testing.T) {
+	ctx := Context{
+		Focused:           constants.COMPONENT_SEARCH_PAGE,
+		SearchPageVisible: true,
+	}
+	pressable := pressableNow(ctx)
+
+	if !containsBinding(pressable, Global.ForceQuit) {
+		t.Error("ctrl+c must stay pressable while the Search page is open")
+	}
+	for _, banned := range []key.Binding{Global.Quit, Global.Theme, Global.Picker, Global.ToggleListsPanel} {
+		if containsBinding(pressable, banned) {
+			t.Errorf("Search page context wrongly leaves %q pressable", banned.Help().Key)
+		}
+	}
+}

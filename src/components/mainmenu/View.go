@@ -72,7 +72,7 @@ func (m Model) View() tea.View {
 	}
 
 	tabs := lipgloss.JoinHorizontal(lipgloss.Left,
-		tab("1", "Active", !m.archiveOpen),
+		tab("1", "Active", !m.archiveOpen && !m.searchOpen),
 		tab("2", "Archived", m.archiveOpen),
 	)
 

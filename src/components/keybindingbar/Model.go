@@ -45,6 +45,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			ListsPanelVisible:   msg.ListsPanelVisible,
 			DetailsPanelVisible: msg.DetailsPanelVisible,
 			ArchivePageVisible:  msg.ArchivePageVisible,
+			SearchPageVisible:   msg.SearchPageVisible,
 			TaskTreeEmpty:       msg.TaskTreeEmpty,
 			HasActiveList:       msg.HasActiveList,
 			Creating:            msg.Creating,
