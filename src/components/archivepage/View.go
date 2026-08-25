@@ -246,15 +246,19 @@ func (m Model) renderPreviewRows(width, maxLines int) string {
 
 	lines := make([]string, 0, end-start)
 	for _, r := range rows[start:end] {
-		lines = append(lines, m.renderPreviewRow(r, width))
+		highlighted := r.Task.ID == m.highlightedTaskID
+		lines = append(lines, m.renderPreviewRow(r, width, highlighted))
 	}
 	return lipgloss.JoinVertical(lipgloss.Left, lines...)
 }
 
 // renderPreviewRow renders one task line: the same checkbox glyph vocabulary
 // the task tree uses (◻ pending, ◼ in-progress/complete, tinted by status,
-// docs/DESIGN.md §12), indented by depth, title truncated to width.
-func (m Model) renderPreviewRow(r apptypes.Row, width int) string {
+// docs/DESIGN.md §12), indented by depth, title truncated to width. When
+// highlighted (the task a search result revealed) the row is drawn with the
+// accent left bar and a bold primary title, so the result's task stands out
+// within a long read-only preview that otherwise has no selection concept.
+func (m Model) renderPreviewRow(r apptypes.Row, width int, highlighted bool) string {
 	indent := ""
 	for range r.Depth {
 		indent += "  "
@@ -274,8 +278,23 @@ func (m Model) renderPreviewRow(r apptypes.Row, width int) string {
 	}
 
 	glyph := lipgloss.NewStyle().Foreground(checkboxFg).Render(checkbox)
-	title := lipgloss.NewStyle().Foreground(textFg).Render(chrome.Truncate(r.Task.Title, max(1, width-len(indent)-2)))
-	return indent + glyph + " " + title
+	titleStyle := lipgloss.NewStyle().Foreground(textFg)
+	if highlighted {
+		titleStyle = titleStyle.Bold(true)
+	}
+	title := titleStyle.Render(chrome.Truncate(r.Task.Title, max(1, width-len(indent)-2)))
+	line := indent + glyph + " " + title
+	if highlighted {
+		// Lift the revealed task's line onto an accent left bar + the
+		// panel-background fill, the same "this is the one to look at" cue the
+		// task tree's selected row uses (chrome.BarColumn, docs/DESIGN.md
+		// §12), so it stands out even in a list that otherwise has no
+		// selection concept.
+		bg := appstyles.Active.PanelBg
+		bar := chrome.BarColumn(appstyles.Active.Accent, bg, line)
+		return appstyles.FillBackground(bg, lipgloss.JoinHorizontal(lipgloss.Left, bar, line))
+	}
+	return line
 }
 
 // renderHint renders the page's own keybinding hint line, in place of the

@@ -403,6 +403,21 @@ keystroke, or a fresh preview load — one place owns keeping them in range,
 mirroring the task tree's own `scrollFor` being the one place that advances
 `scrollOffset`.
 
+**A search result from an archived list reveals the list and task here rather
+than jumping the active list (see §8's picker).** An archived list cannot be
+the active list, so the picker's Enter on such a result emits
+`OpenArchivedTaskMsg`; AppModel opens the page and hands it a
+`RevealArchivedTaskMsg`. The page selects the result's archived list (scrolling
+the list column to it when it sits below the fold — `clampWindowStart` positions
+the window the same way a below-fold selection does), loads that list's preview,
+and once the preview arrives marks the exact task with an accent left bar plus a
+bold primary title (`chrome.BarColumn` and the preview row's own status glyphs,
+the same "this is the one" cue the task tree's selected row uses; the preview
+otherwise has no selection concept since the columns are read-only). The
+preview scrolls to keep the marked task visible. If the task is no longer in
+the list the page simply shows the normal read-only preview — the mark degrades
+to nothing rather than pointing at a stale row.
+
 Archive's `esc` is its own ladder before it ever reaches AppModel's, and it
 mirrors the tree's own `/`-filter exactly rather than inventing a new shape:
 `esc` clears the name filter in one step, whether it is still being typed or
@@ -639,9 +654,20 @@ active so the cursor can walk the results — and `esc` clears it. The two
 states differ only in where the keyboard is, never in what is on screen.
 
 **`F`** opens the cross-list search picker (phase 8): a text input searches
-every list live, ranking title matches before notes-only hits, and showing
-each result as `<list> › <task>`. `enter` on a result jumps to that task —
-switching the active list when the match lives elsewhere — and `esc` cancels.
+every list live — archived lists included — ranking title matches before
+notes-only hits, and showing each result as `<list> › <task>`. An **active**
+list's name is styled exactly like its task title (the two read as one label);
+only an **archived** list's name is drawn in `TextDim` and suffixed with `*`,
+with a one-line `* archived list` legend appearing whenever the current result
+set contains one. `enter` on a result jumps to that task — switching the active
+list when the match lives elsewhere — but a result from an **archived** list
+cannot become the active list, so instead it opens the Archived page and
+reveals the list + task there (see §5). `esc` cancels. The picker reserves its
+result area at a height and width fixed when it opens (`↑`/`↓` walk the
+matches; `j`/`k` stay query characters because the input owns them), so live
+filtering re-fills the list in place instead of resizing the modal on every
+keystroke — a live search whose match count re-heights its own surface reads as
+a different modal each keystroke.
 
 **`d` deletes the selected task** (or list, when the lists panel is focused),
 prompting for confirmation first (docs/DESIGN.md §9: destructive TUI ops need
@@ -1895,6 +1921,31 @@ focus. A value the user can edit therefore looks lit and reads in
 `(no children)` — stays a muted parenthetical annotation. That contrast is the
 whole signal that a field takes input; there is no caret glyph, and a component
 must not invent one.
+
+**Selectable rows inside a modal** cannot use the tree's lift-to-`ModalBg`
+cursor signal, because the modal's surface *is* `ModalBg` — lifting a row
+onto the tier it already sits on moves the cursor invisibly (the search
+picker shipped that way: the footer advertised `↑/↓` while the highlight was
+pixel-identical to every other row). The theme picker, whose rows are flat
+names, marks its cursor the one way that still contrasts on `ModalBg`: the
+cursor row renders `TextPrimary` **bold**, and every other row renders
+`TextMuted`, both sealed on `ModalBg`. The search picker, whose rows are task
+rows, marks its cursor the way a **selected task** does rather than by tier
+alone: the cursor row gets the `▌` accent bar column plus a `BackgroundElevated`
+lift (`chrome.BarColumn` and `renderTaskCard`'s bar-and-body split, so bar +
+body sum to the row width and the lift reads as a full-width band rather than
+a highlight behind the text) — a *different* tier than `ModalBg`, because
+lifting to `ModalBg` is invisible on a `ModalBg` surface. Every other result
+row sits unselected on `ModalBg` with an invisible (ModalBg-on-ModalBg) bar.
+In both modals unselected rows recede exactly as far as the cursor row stands
+out. In the search picker an **active** list's name is styled exactly like its
+task title — the two read as one label — and only an **archived** list's name
+is drawn in `TextDim` (suffixed with `*`), the dim tier signaling "this is a
+different, non-active kind of list" and explained by a one-line
+`* archived list` legend shown only when the current result set actually
+contains an archived list. The cursor row keeps `TextPrimary bold` on the
+title, never on the list name, so the bold cue and the accent bar both point
+at the one selected row.
 
 ### Two shared frames: `chrome.PanelFrame`
 

@@ -475,6 +475,19 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		finalCmds = append(finalCmds, m.footerContextCmd())
 
 	case cmds.RefreshTasksMsg:
+		// A RefreshTasksMsg for a list other than the active one is a stale
+		// snapshot: RefreshTasks is only ever queued with the activeListID at
+		// the moment it is scheduled, so a ListID that no longer matches means
+		// the command raced a list switch (the picker's jump, below). The task
+		// tree adopts whatever list a refresh carries, so applying a stale
+		// refresh would reset the selection the jump just landed on — the
+		// "lands on the right task, then jumps to another one" bug. AppModel
+		// owns activeListID; drop the refresh before any component sees it.
+		// The switch's own refresh for the new list follows and re-seeds the
+		// tree, so nothing is lost.
+		if msg.ListID != m.activeListID {
+			return m, nil
+		}
 		if msg.Err != nil {
 			m.lastError = msg.Err.Error()
 			break
@@ -508,7 +521,7 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.activeModal = aboutmodal.New(m.terminalWidth)
 
 	case cmds.OpenSearchPickerMsg:
-		m.activeModal = searchpicker.New(m.store, m.terminalHeight)
+		m.activeModal = searchpicker.New(m.store, m.terminalWidth, m.terminalHeight)
 
 	case cmds.OpenExportModalMsg:
 		m.activeModal = importexportmodal.NewExport(m.store, m.highlightedListIDptr(), m.terminalWidth)
@@ -577,6 +590,24 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds.SetFocus(constants.COMPONENT_ARCHIVE_PAGE),
 			m.footerContextCmd(),
 			cmds.RefreshArchivedLists(m.store),
+		)
+
+	case cmds.OpenArchivedTaskMsg:
+		// The search picker's Enter on a result whose list is archived. Same
+		// open shape as OpenArchivePageMsg, plus a reveal request handed to
+		// the page so it selects the result's list (scrolling to it) and
+		// highlights the task in the preview — an archived list cannot become
+		// the active list, so "jump to it" means "surface it on the Archive
+		// page". The reveal is sent after the open so the page is alive when
+		// it arrives; if the list isn't loaded yet the page applies it once
+		// the archived set refreshes.
+		m.archivePageVisible = true
+		m.focusedZone = constants.COMPONENT_ARCHIVE_PAGE
+		finalCmds = append(finalCmds,
+			cmds.SetFocus(constants.COMPONENT_ARCHIVE_PAGE),
+			m.footerContextCmd(),
+			cmds.RefreshArchivedLists(m.store),
+			cmds.RevealArchivedTask(msg.TaskID, msg.ListID),
 		)
 
 	case cmds.CloseArchivePageMsg:

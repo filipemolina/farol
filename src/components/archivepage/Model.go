@@ -93,6 +93,25 @@ type Model struct {
 	// previewViewportRows() after every Update (see the exported Update
 	// wrapper below).
 	previewScroll int
+
+	// revealTarget is the archived search result the page was opened on: the
+	// list to select (and scroll into view) and the task to highlight in the
+	// preview. A zero value means the page was opened directly (the A key),
+	// not revealed. It is cleared once the reveal has been applied so a later
+	// poll refresh cannot re-apply it and yank the selection away.
+	revealTarget *reveal
+	// highlightedTaskID is the task marked in the preview, set when the
+	// preview for the revealed list loads and the task is found. It is reset
+	// whenever the preview changes list or the preview is reloaded, so the
+	// mark only ever points at the revealed result, never a stale one.
+	highlightedTaskID string
+}
+
+// reveal names the archived-list entry and task a search result asked the
+// page to surface.
+type reveal struct {
+	listID string
+	taskID string
 }
 
 // New builds the Archive page.
@@ -151,6 +170,19 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.previewFocused = false
 		m.listScroll = 0
 		m.previewScroll = 0
+		m.revealTarget = nil
+		m.highlightedTaskID = ""
+		return m, nil
+
+	case cmds.RevealArchivedTaskMsg:
+		// The search picker's Enter on an archived result, arriving after
+		// AppModel opened the page. Remember what to reveal, then apply it if
+		// the archived set is already loaded; otherwise handleRefreshArchived
+		// applies it once the lists arrive.
+		m.revealTarget = &reveal{listID: msg.ListID, taskID: msg.TaskID}
+		if len(m.entries) > 0 {
+			return m.applyReveal()
+		}
 		return m, nil
 
 	case cmds.RefreshArchivedListsMsg:
@@ -166,6 +198,15 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.previewErr = msg.Err
 		if msg.Err == nil {
 			m.previewRows = msg.Rows
+		}
+		m.highlightedTaskID = ""
+		if m.revealTarget != nil && m.revealTarget.listID == msg.ListID {
+			// This is the revealed list's preview: mark and scroll to the
+			// task the search result pointed at, then clear the target so a
+			// later poll refresh cannot re-apply the reveal and yank the
+			// selection away.
+			m.findAndHighlightRevealTask()
+			m.revealTarget = nil
 		}
 		return m, nil
 
@@ -189,8 +230,74 @@ func (m Model) handleRefreshArchivedLists(msg cmds.RefreshArchivedListsMsg) (tea
 		return m, nil
 	}
 	m.entries = msg.Lists
+	// A pending reveal (the search picker's archived result) applies once the
+	// archived set is populated: select the result's list, scroll to it, and
+	// load its preview so the task can be marked. Direct opens (no reveal)
+	// clamp to the top as before.
+	if m.revealTarget != nil {
+		return m.applyReveal()
+	}
 	m.clampSelection()
 	return m, m.loadPreviewIfSelectionChanged()
+}
+
+// applyReveal selects the archived list the search result came from (scrolling
+// the list column to it) and loads its preview so the task can be marked. It
+// returns without clearing the reveal target: the preview load that follows
+// discovers the task and sets the highlight, and this function's own clearing
+// is deferred to that preview application so the target survives long enough.
+func (m Model) applyReveal() (tea.Model, tea.Cmd) {
+	if m.revealTarget == nil {
+		return m, nil
+	}
+	r := m.revealTarget
+	// Clear the filter so the target list cannot be hidden by a stale query.
+	m.filterInput.SetValue("")
+	m.filtering = false
+	m.filterInput.Blur()
+	m.clampSelection()
+	// Find the target list's index within the visible set; without it (the
+	// list vanished between search and this open) just fall through to the
+	// unfiltered top selection.
+	for i, e := range m.visibleEntries() {
+		if e.List.ID == r.listID {
+			m.selectedIdx = i
+			// Position the list column so the selected entry is visible even
+			// when it sits far below the fold.
+			m.listScroll = clampWindowStart(len(m.visibleEntries()), i, m.listViewportRows(), m.listScroll)
+			// Kick a preview load for the selected (revealed) list so the
+			// task can be found and marked.
+			return m, m.loadPreviewIfSelectionChanged()
+		}
+	}
+	// Target list not found: fall back to the current selection (which
+	// clampSelection already normalised) without a reveal.
+	m.revealTarget = nil
+	return m, m.loadPreviewIfSelectionChanged()
+}
+
+// findAndHighlightRevealTask locates the revealed task within the current
+// preview rows and marks it (highlightedTaskID) while scrolling the preview
+// column so its row is visible. When the task is absent the preview stays
+// unmarked — the list may have changed since the search ran — which degrades
+// to the plain read-only preview rather than a misleading highlight.
+func (m *Model) findAndHighlightRevealTask() {
+	if m.revealTarget == nil {
+		return
+	}
+	taskID := m.revealTarget.taskID
+	idx := -1
+	for i, r := range m.previewRows {
+		if r.Task.ID == taskID {
+			idx = i
+			break
+		}
+	}
+	if idx < 0 {
+		return
+	}
+	m.highlightedTaskID = taskID
+	m.previewScroll = clampWindowStart(len(m.previewRows), idx, m.previewViewportRows(), m.previewScroll)
 }
 
 // handleKey mirrors detailspanel's compose-vs-modal split: while the filter
@@ -394,6 +501,7 @@ func (m *Model) loadPreviewIfSelectionChanged() tea.Cmd {
 	m.previewErr = nil
 	m.previewLoading = true
 	m.previewScroll = 0
+	m.highlightedTaskID = ""
 	return cmds.RefreshArchivedListPreview(m.store, sel.List.ID)
 }
 

@@ -618,4 +618,78 @@ func TestOpenArchivePageMsgResetsFocusAndScroll(t *testing.T) {
 	}
 }
 
+// TestRevealSelectsListAndHighlightsTask proves the search result's "reveal"
+// half on the Archive page: RevealArchivedTaskMsg selects the archived list
+// the task came from (scrolling the list column to it when it sits below the
+// fold), loads its preview, and — once the preview arrives — marks the exact
+// task with highlightedTaskID and scrolls the preview to it.
+func TestRevealSelectsListAndHighlightsTask(t *testing.T) {
+	m, s := manyArchivedListsModel(t, 20)
+	// Give "target" a task to reveal; put it in the list at index 12 so the
+	// selection must scroll the list column to reach it.
+	targetLis, err := s.CreateList("target", "")
+	if err != nil {
+		t.Fatalf("create target list: %v", err)
+	}
+	if err := s.ArchiveList(targetLis); err != nil {
+		t.Fatalf("archive target list: %v", err)
+	}
+	targetTask, err := s.CreateTask(targetLis, "needle task", nil, "")
+	if err != nil {
+		t.Fatalf("create target task: %v", err)
+	}
+
+	// Reload entries so "target" is present.
+	m = step(t, m, cmds.RefreshArchivedListsMsg{Lists: apptypes.FromStoreLists(mustArchivedLists(t, s))})
+
+	// Reveal: the page must select the list (scrolling to it if needed) and
+	// kick a preview load for it.
+	m = step(t, m, cmds.RevealArchivedTaskMsg{TaskID: targetTask, ListID: targetLis})
+	sel, ok := m.selectedEntry()
+	if !ok || sel.List.ID != targetLis {
+		t.Fatalf("after reveal, selected entry = %+v (ok=%v), want the target list %q", sel, ok, targetLis)
+	}
+	if m.previewListID != targetLis {
+		t.Errorf("after reveal, previewListID = %q, want %q (must load the revealed list's preview)", m.previewListID, targetLis)
+	}
+	if m.listScroll <= 0 {
+		t.Error("revealing a list below the fold should have scrolled the list column to it")
+	}
+	if m.revealTarget == nil {
+		t.Error("revealTarget cleared before the preview load could mark the task")
+	}
+
+	// Deliver the preview for the revealed list. It is deep enough that a
+	// long list would hide the task without scrolling the preview too.
+	rows := make([]apptypes.Row, 0, 40)
+	for i := range 40 {
+		id := fmt.Sprintf("r%d", i)
+		if i == 30 {
+			rows = append(rows, apptypes.Row{Task: apptypes.Task{ID: targetTask, Title: "needle task"}})
+			continue
+		}
+		rows = append(rows, apptypes.Row{Task: apptypes.Task{ID: id, Title: id}})
+	}
+	m = step(t, m, cmds.RefreshArchivedListPreviewMsg{ListID: targetLis, Rows: rows})
+
+	if m.highlightedTaskID != targetTask {
+		t.Errorf("highlightedTaskID = %q, want target task %q", m.highlightedTaskID, targetTask)
+	}
+	if m.previewScroll <= 0 {
+		t.Error("preview should have scrolled to reveal the marked task")
+	}
+
+	// The mark is visible in the rendered view (nonzero accent bar + bold).
+	out := ansi.Strip(m.View().Content)
+	if !strings.Contains(out, "needle task") {
+		t.Errorf("revealed task missing from rendered preview:\n%s", out)
+	}
+	// A live (non-stripped) view must contain the accent-bar escape sequence
+	// for the highlighted row.
+	live := m.View().Content
+	if !strings.Contains(live, "\x1b[") {
+		t.Error("highlighted task did not render any styling in the preview")
+	}
+}
+
 var _ tea.Model = Model{}

@@ -16,40 +16,65 @@ import (
 // so it re-derives it rather than importing the chrome helper.
 const modalChrome = 10
 
+// rowWidthChrome is the columns a result row yields to the modal's own
+// chrome (border 2 + padding 4) plus a margin so the centered surface never
+// touches the terminal edges. minRowWidth keeps the reserved area honest on
+// terminals too narrow for the subtraction to leave anything.
+const (
+	rowWidthChrome = 10
+	minRowWidth    = 24
+)
+
 // Result is one candidate: the task plus the name of the list it lives in,
-// enough to render "<list> › <title>" and to jump to it.
+// enough to render "<list> › <title>" and to jump to it. Archived marks a
+// result whose list is archived, so the picker can label it distinctly and
+// route Enter to the Archive page instead of trying to make an archived list
+// the active one.
 type Result struct {
 	TaskID   string
 	Title    string
 	ListID   string
 	ListName string
+	Archived bool
 }
 
 // Model is the cross-list search picker: a focused text input, a live result
 // list, and a cursor over it.
 type Model struct {
-	input   textinput.Model
-	query   string
-	results []Result
-	cursor  int
-	errMsg  string
-	store   *store.Store
-	visible int // max result rows the terminal can show
+	input    textinput.Model
+	query    string
+	results  []Result
+	cursor   int
+	errMsg   string
+	store    *store.Store
+	visible  int // result rows the modal reserves (fixed for its lifetime)
+	rowWidth int // display columns every result row is truncated/padded to
 }
 
 func (m Model) Init() tea.Cmd { return textinput.Blink }
 
-// New builds the picker. termHeight sizes the result list so the modal fits
-// the terminal. The input starts focused so the user can type immediately.
-func New(s *store.Store, termHeight int) tea.Model {
+// New builds the picker. termHeight sizes the result area and termWidth caps
+// each row, both fixed at open so live filtering re-fills the list in place
+// instead of resizing the modal on every keystroke. The input starts focused
+// so the user can type immediately.
+func New(s *store.Store, termWidth, termHeight int) tea.Model {
 	input := textinput.New()
 	input.Focus()
 	input.Placeholder = "search all lists"
 
+	rowWidth := max(minRowWidth, termWidth-rowWidthChrome)
+	// The input sits directly above the result list and spans the same fixed
+	// width, or a narrow default width truncates the placeholder mid-word
+	// (the reported lone "s"). It is never resized on a keystroke — only the
+	// content re-fills — so the box stays put, the same "no live resize"
+	// contract as the result rows.
+	input.SetWidth(max(0, rowWidth))
+
 	return Model{
-		input:   input,
-		store:   s,
-		visible: max(3, termHeight-modalChrome),
+		input:    input,
+		store:    s,
+		visible:  max(3, termHeight-modalChrome),
+		rowWidth: rowWidth,
 	}
 }
 

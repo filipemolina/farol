@@ -24,9 +24,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			r := m.results[m.cursor]
-			// Close first, then jump as the follow-up, so the modal is gone
-			// before AppModel switches lists and moves the selection.
-			return m, cmds.CloseModal(cmds.JumpToTask(r.TaskID, r.ListID))
+			// Close first, then hand off as the follow-up, so the modal is
+			// gone before AppModel switches lists or opens the Archive page.
+			// An archived list cannot become the active list, so a result
+			// from one goes to the Archive page (revealed on that list and
+			// task) rather than the JumpToTask that moves the active list.
+			var follow tea.Cmd
+			if r.Archived {
+				follow = cmds.OpenArchivedTask(r.TaskID, r.ListID)
+			} else {
+				follow = cmds.JumpToTask(r.TaskID, r.ListID)
+			}
+			return m, cmds.CloseModal(follow)
 
 		case key.Matches(msg, navBinding):
 			dir := 1

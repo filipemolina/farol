@@ -84,3 +84,63 @@ func TestJumpToTaskSwitchesListAndSelects(t *testing.T) {
 		}
 	})
 }
+
+// Regression: a poll refresh for the OLD list can race a picker jump. The poll
+// tick snapshots activeListID when it fires; if that tick was queued just
+// before the jump switched the active list, its RefreshTasksMsg lands AFTER the
+// jump carrying the stale list's rows. The task tree adopts whatever list a
+// refresh names, so before the fix that stale refresh reset the selection the
+// jump had just landed on — "lands on the right task, then jumps to another
+// one about a second later." AppModel now drops a refresh whose list is not the
+// active list, so the stale rows never reach the tree and the jump survives.
+func TestJumpToOtherListSurvivesStalePollRefresh(t *testing.T) {
+	m := newTestModel(t, t.TempDir())
+	lists, _ := m.store.ListLists()
+	for _, l := range lists {
+		m.store.DeleteList(l.ID)
+	}
+
+	listA, err := m.store.CreateList("Alpha", "")
+	if err != nil {
+		t.Fatalf("create list A: %v", err)
+	}
+	listB, err := m.store.CreateList("Beta", "")
+	if err != nil {
+		t.Fatalf("create list B: %v", err)
+	}
+	var listBTasks []string
+	for _, title := range []string{"First", "Second", "Third", "Last"} {
+		id, err := m.store.CreateTask(listB, title, nil, "")
+		if err != nil {
+			t.Fatalf("create task in B: %v", err)
+		}
+		listBTasks = append(listBTasks, id)
+	}
+	if _, err := m.store.CreateTask(listA, "A task", nil, ""); err != nil {
+		t.Fatalf("create task in A: %v", err)
+	}
+
+	// Seed list A as active with its tasks loaded.
+	m = refresh(t, m, cmds.RefreshLists(m.store)())
+	m = refresh(t, m, cmds.RefreshTasks(m.store, listA, apptypes.SortManual)())
+	if m.activeListID != listA {
+		t.Fatalf("seed: activeListID = %q, want %q", m.activeListID, listA)
+	}
+
+	// Jump to "Third" in list B (a middle task, so a reset to a surviving row
+	// would be visibly the wrong selection, not a clamp back to the target).
+	target := listBTasks[2]
+	m = refresh(t, m, cmds.JumpToTaskMsg{TaskID: target, ListID: listB})
+	if got := selectedID(t, m); got != target {
+		t.Fatalf("after jump: selected = %q, want target %q", got, target)
+	}
+
+	// A poll tick queued before the jump delivers the OLD list's refresh.
+	m = refresh(t, m, cmds.RefreshTasks(m.store, listA, apptypes.SortManual)())
+	if got := selectedID(t, m); got != target {
+		t.Fatalf("after stale old-list refresh: selected = %q, want target %q (reset by a stale poll refresh)", got, target)
+	}
+	if m.activeListID != listB {
+		t.Fatalf("after stale old-list refresh: activeListID = %q, want %q (stale refresh must not switch the active list back)", m.activeListID, listB)
+	}
+}
