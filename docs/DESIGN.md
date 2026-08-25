@@ -333,22 +333,25 @@ visible rather than off-screen at the end. The comment thread renders as selecta
 chrome, §12); `↑`/`↓` move the highlight and `y` copies the highlighted
 comment's id to the system clipboard.
 
-**farol has three top-level pages — Active, Archived, and Search.** Active
-and Archived are switched with `1` and `2` (`keys.Global.PageActive`/
-`PageArchived`) — a digit-tab header styled after `../cais`'s mainmenu. The
-header renders those two tabs at all times, digit-prefixed (`1 Active`,
-`2 Archived`), the selected one lifted with the same accent `▌` bar cais's
-`tabLabel` uses. Search has no tab: it is opened with **`F`**
-(`keys.Global.Picker`) from either page and left by `esc` (landing on
-Active) or a digit, so the header keeps saying exactly what the digits do
-and nothing more. `1` and `2` work from any page whenever no text input
-owns the keyboard — including from inside Search, where they are a second
-way out — the same "the digit always jumps there" contract cais's
-`pageForNavKey` establishes, not a toggle limited to opening from Active.
-The current page is one enum value (`PageActive`/`PageArchived`/
-`PageSearch`) in AppModel, not a lattice of booleans: exactly one page
-renders at a time, and adding a page is one new value, not one new flag
-threaded through every check.
+**farol has three top-level pages — Active, Archived, and Search — switched
+with `1`, `2`, and `3` (`keys.Global.PageActive`/`PageArchived`/
+`PageSearch`) — a digit-tab header styled after `../cais`'s mainmenu.** The
+header renders all three tabs at all times, digit-prefixed (`1 Active`,
+`2 Archived`, `3 Search`), the selected one lifted with the same accent `▌`
+bar cais's `tabLabel` uses. **`F`** (`keys.Global.Picker`) is an alias for
+`3`: the picker's original binding, kept because search-as-a-verb predates
+its tab and muscle memory asks for it from any surface. The digits work
+from any page whenever no text input owns the keyboard — including from
+inside another page, where they are the way out — the same "the digit
+always jumps there" contract cais's `pageForNavKey` establishes, not a
+toggle limited to opening from Active. On the Search page the digits win
+over the query input: they are matched by the page's own handler ahead of
+the default printable branch, so a query can never contain a digit — the
+digit contract applied uniformly, not a search exception. The current
+page is one enum value (`PageActive`/`PageArchived`/`PageSearch`) in
+AppModel, not a lattice of booleans: exactly one page renders at a time,
+and adding a page is one new value, not one new flag threaded through
+every check.
 
 **The Archive page is a full-body takeover, not a modal.** Unlike Details it
 does not layer a centered box over the body: while the current page is
@@ -457,10 +460,10 @@ the bottom keybinding bar stay visible around it; the footer stays live and
 advertises its keys like any page's; sizing comes from the same
 `SetBodyLayoutMsg` broadcast every body surface takes, so a resize while it
 is open reflows it; and none of its layout constants are hand-subtracted.
-Like Archive it is not a third tab-cycle target and not a side surface — it
-replaces the body row entirely, is entered by `F` and left by `esc` or a
-digit, and receives every keypress through the same page-capture tier this
-section already describes.
+Like Archive it is not a tab-cycle target and not a side surface — it
+replaces the body row entirely, is entered by `3` or `F` and left by `esc`
+or another digit, and receives every keypress through the same page-capture
+tier this section already describes.
 
 A text input at the top searches every list live — archived lists included
 — ranking title matches before notes-only hits, each result shown as
@@ -471,10 +474,14 @@ opening the Archived page and revealing the list + task there when it lives
 on an archived one (see the reveal behavior above). `esc` closes the page
 onto Active: search is a visit, not a destination, and remembering which
 page it was opened from buys nothing over two digits that already jump
-anywhere. `F` itself is live on both other pages — on Archived, whose
-capture owns every keypress, the page's own `handleKey` matches it exactly
-the way it matches `1`; while Search is open `F` is inert, a printable
-character the input owns.
+anywhere. `3` is live on every page like its fellow digits — on Search
+itself the page's own handler matches it ahead of the input and re-opens
+idempotently. `F` is live on the two other pages the same way — on
+Archived, whose capture owns every keypress, the page's `handleKey` matches
+it exactly as it matches `1` — but while Search is open `F` falls through
+to the input as a printable query character, so titles like `Farol v0.4`
+stay searchable: the alias opens the page; it does not take a character
+away from its query.
 
 The query, results, and cursor **persist while the app runs**: leaving and
 re-entering shows the search as you left it, and every poll refresh re-runs
@@ -713,7 +720,8 @@ still applies the query — it blurs the input and leaves the filtered view
 active so the cursor can walk the results — and `esc` clears it. The two
 states differ only in where the keyboard is, never in what is on screen.
 
-**`F`** opens the cross-list **Search page** (phase 8, originally a modal):
+**`F`** opens the cross-list **Search page** (phase 8, originally a modal)
+— an alias for the `3` tab, kept for the picker's original muscle memory:
 a text input searches every list live — archived lists included — ranking
 title matches before notes-only hits, and showing each result as
 `<list> › <task>`. An **active** list's name is styled exactly like its task
