@@ -333,18 +333,26 @@ visible rather than off-screen at the end. The comment thread renders as selecta
 chrome, §12); `↑`/`↓` move the highlight and `y` copies the highlighted
 comment's id to the system clipboard.
 
-**farol has two top-level pages, Active and Archived, switched with `1` and
-`2` (`keys.Global.PageActive`/`PageArchived`) — a digit-tab header styled
-after `../cais`'s mainmenu.** The header renders both tabs at all times,
-digit-prefixed (`1 Active`, `2 Archived`), the selected one lifted with the
-same accent `▌` bar cais's `tabLabel` uses. `1` and `2` work from anywhere no
-text input owns the keyboard, including from inside the *other* page — the
-same "the digit always jumps there" contract cais's `pageForNavKey`
-establishes, not a toggle limited to opening from Active.
+**farol has three top-level pages — Active, Archived, and Search.** Active
+and Archived are switched with `1` and `2` (`keys.Global.PageActive`/
+`PageArchived`) — a digit-tab header styled after `../cais`'s mainmenu. The
+header renders those two tabs at all times, digit-prefixed (`1 Active`,
+`2 Archived`), the selected one lifted with the same accent `▌` bar cais's
+`tabLabel` uses. Search has no tab: it is opened with **`F`**
+(`keys.Global.Picker`) from either page and left by `esc` (landing on
+Active) or a digit, so the header keeps saying exactly what the digits do
+and nothing more. `1` and `2` work from any page whenever no text input
+owns the keyboard — including from inside Search, where they are a second
+way out — the same "the digit always jumps there" contract cais's
+`pageForNavKey` establishes, not a toggle limited to opening from Active.
+The current page is one enum value (`PageActive`/`PageArchived`/
+`PageSearch`) in AppModel, not a lattice of booleans: exactly one page
+renders at a time, and adding a page is one new value, not one new flag
+threaded through every check.
 
 **The Archive page is a full-body takeover, not a modal.** Unlike Details it
-does not layer a centered box over the body: while `archivePageVisible` is
-true, `renderBody()` returns the Archive page's own `View` in place of the
+does not layer a centered box over the body: while the current page is
+Archived, `renderBody()` returns the Archive page's own `View` in place of the
 Tasks/Lists split entirely — the same "one surface replaces the whole row"
 shape Tasks-alone already has with Lists hidden, not a second thing
 composited on top of it. This is why neither of this section's opening
@@ -369,11 +377,13 @@ the name filter still lands there) and emits the same `CloseArchivePageMsg`
 a second `esc` would.
 The list column and the read-only task preview beside it split the body row
 the way `../cais`'s `backuppage` does, though the outer page-switching
-mechanism deliberately does *not* copy `cais`'s `AppModel.pages` map: a
-single boolean flag mirroring `detailsPanelVisible`'s own shape is enough
-for one additional surface, and cais's registry solves a problem (four or
-more pages) this app does not have. Only the header's tab *rendering*
-borrows cais's look; the state underneath it is still one bool.
+mechanism deliberately does *not* copy `cais`'s `AppModel.pages` map. The
+state under the tabs was a single boolean mirroring `detailsPanelVisible`'s
+own shape while there were two pages; the Search page made it a three-value
+enum instead — still a closed set with no dynamic registration, which is the
+part of cais's registry this app still does not need (four-or-more pages,
+pages constructed on demand). Only the header's tab *rendering* borrows
+cais's look.
 
 **The two columns scroll independently, each keyed off `previewFocused`
 rather than a second focus zone AppModel knows about.** `tab`/`shift+tab`
@@ -404,8 +414,8 @@ mirroring the task tree's own `scrollFor` being the one place that advances
 `scrollOffset`.
 
 **A search result from an archived list reveals the list and task here rather
-than jumping the active list (see §8's picker).** An archived list cannot be
-the active list, so the picker's Enter on such a result emits
+than jumping the active list (see the Search page below).** An archived list
+cannot be the active list, so Enter on such a result emits
 `OpenArchivedTaskMsg`; AppModel opens the page and hands it a
 `RevealArchivedTaskMsg`. The page selects the result's archived list (scrolling
 the list column to it when it sits below the fold — `clampWindowStart` positions
@@ -429,10 +439,60 @@ the checks above it, the full precedence a keypress meets is: a modal (if one
 is open) first, then Details (if open) handles its own `esc` internally (the
 dirty-discard prompt, then a clean close), then the Archive page (if open)
 runs the clear-then-close ladder just described (or the `1` shortcut past
-it), and only once none of those three apply does AppModel's own `switch` on
+it), and only once none of those apply does AppModel's own `switch` on
 `Global.Back` run — a focused child's own `KeepsEsc` (the tree or Lists
 panel's filter) claims it before
-the Lists panel's own open/close fallback does.
+the Lists panel's own open/close fallback does. The pages are mutually
+exclusive by the enum, so which page check runs is not an ordering question;
+that the page tier sits below Details and above the switch is.
+
+**The Search page is a full-body takeover the same way Archive is — it is
+the cross-list picker (`F`) promoted from a modal to a page.** It used to be
+the largest `activeModal`: a near-full-terminal centered box that blanked
+the footer, painted its own private hint line, snapshotted the terminal size
+at open, and re-derived its chrome arithmetic by hand. Every one of those
+was a cost of being a modal, not a property of search, so the page form
+removes them by construction instead of patching each: the top menu bar and
+the bottom keybinding bar stay visible around it; the footer stays live and
+advertises its keys like any page's; sizing comes from the same
+`SetBodyLayoutMsg` broadcast every body surface takes, so a resize while it
+is open reflows it; and none of its layout constants are hand-subtracted.
+Like Archive it is not a third tab-cycle target and not a side surface — it
+replaces the body row entirely, is entered by `F` and left by `esc` or a
+digit, and receives every keypress through the same page-capture tier this
+section already describes.
+
+A text input at the top searches every list live — archived lists included
+— ranking title matches before notes-only hits, each result shown as
+`<list> › <task>`. `↑`/`↓` walk the results (`j`/`k` stay query characters
+because the input owns them). `enter` on a result jumps to that task —
+switching to Active and the result's list when it lives on an active list,
+opening the Archived page and revealing the list + task there when it lives
+on an archived one (see the reveal behavior above). `esc` closes the page
+onto Active: search is a visit, not a destination, and remembering which
+page it was opened from buys nothing over two digits that already jump
+anywhere. `F` itself is live on both other pages — on Archived, whose
+capture owns every keypress, the page's own `handleKey` matches it exactly
+the way it matches `1`; while Search is open `F` is inert, a printable
+character the input owns.
+
+The query, results, and cursor **persist while the app runs**: leaving and
+re-entering shows the search as you left it, and every poll refresh re-runs
+a non-empty query so the result list cannot go stale behind the cursor. A
+fresh-input-every-open surface was honest when it lived for one
+keystroke-to-enter; a page that resets itself reads as broken. Zero results
+render the recessed-card empty state (§12); a store error renders inline in
+the same tier the Details modal draws its errors in (§12).
+
+The page lays out as a single column today, but composes its width the way
+Archive splits its two columns: a read-only preview of the selected result
+is the anticipated second column, and nothing in the layout may assume the
+results own the full width. The footer advertises the live keys — navigate,
+open, back — derived from the page's bindings in `src/keys`, replacing the
+private hint line; the help overlay gains no new scope, because nothing on
+the page is invisible, and a scope exists for keys a reader must plan around
+before reaching their surface, not for controls advertised where they live
+(see the catalog rules below).
 
 `tab`/`shift+tab` cycle **only through the targets currently visible** —
 the lists panel is skipped entirely from the cycle while hidden
@@ -653,21 +713,23 @@ still applies the query — it blurs the input and leaves the filtered view
 active so the cursor can walk the results — and `esc` clears it. The two
 states differ only in where the keyboard is, never in what is on screen.
 
-**`F`** opens the cross-list search picker (phase 8): a text input searches
-every list live — archived lists included — ranking title matches before
-notes-only hits, and showing each result as `<list> › <task>`. An **active**
-list's name is styled exactly like its task title (the two read as one label);
-only an **archived** list's name is drawn in `TextDim` and suffixed with `*`,
-with a one-line `* archived list` legend appearing whenever the current result
-set contains one. `enter` on a result jumps to that task — switching the active
-list when the match lives elsewhere — but a result from an **archived** list
+**`F`** opens the cross-list **Search page** (phase 8, originally a modal):
+a text input searches every list live — archived lists included — ranking
+title matches before notes-only hits, and showing each result as
+`<list> › <task>`. An **active** list's name is styled exactly like its task
+title (the two read as one label); only an **archived** list's name is drawn
+in `TextDim` and suffixed with `*`, with a one-line `* archived list` legend
+appearing whenever the current result set contains one. Matched characters
+inside a result's title draw in `Accent` — the same "this is what the
+keyboard found" register the selection bar uses (§12). `enter` on a result
+jumps to that task — switching to Active and the result's list when the
+match lives on an active list — but a result from an **archived** list
 cannot become the active list, so instead it opens the Archived page and
-reveals the list + task there (see §5). `esc` cancels. The picker reserves its
-result area at a height and width fixed when it opens (`↑`/`↓` walk the
-matches; `j`/`k` stay query characters because the input owns them), so live
-filtering re-fills the list in place instead of resizing the modal on every
-keystroke — a live search whose match count re-heights its own surface reads as
-a different modal each keystroke.
+reveals the list + task there (see §5). `esc` closes the page onto Active.
+The full page contract — persistence, layout, the footer carrying the hints
+— lives in the Search page section above; the fixed-at-open result-area
+sizing died with the modal, because a page reflows from the layout broadcast
+like every other body surface.
 
 **`d` deletes the selected task** (or list, when the lists panel is focused),
 prompting for confirmation first (docs/DESIGN.md §9: destructive TUI ops need
@@ -1616,7 +1678,7 @@ main.go              # cobra root: no subcommand -> launch TUI; else dispatch
 src/
 ├── model/           # AppModel: Init/Update/View, the top-level Bubble Tea model
 ├── components/      # one package per leaf model (tasktree, taskspanel,
-│                     # listspanel, detailspanel, themepickermodal, searchpicker,
+│                     # listspanel, detailspanel, themepickermodal, searchpage,
 │                     # listnamemodal, confirmmodal, helpoverlay, keybindingbar,
 │                     # mainmenu)
 │   └── chrome/       # shared rendering: PanelFrame, tree-row rendering, the
@@ -1858,9 +1920,9 @@ analogue of the sealing rule:
    hardcoded ANSI white on its blurred text and default `> ` prompt, and
    `list.New()` ships dark-assumed styles for its filter bar. Every input is
    therefore sealed every render, not once at construction, so a theme
-   switch cannot leave a stale palette on it: `chrome.SealInput` for the
-   standalone text inputs (the task tree's `/` filter and inline create,
-   the search picker, the list-name modal, the Details modal's title and
+switch cannot leave a stale palette on it: `chrome.SealInput` for the
+standalone text inputs (the task tree's `/` filter and inline create,
+the Search page's query input, the list-name modal, the Details modal's title and
    compose fields), `chrome.SealListFilter` for a bubbles list's built-in
    filter bar (the lists panel). Each takes the surface the input sits on,
    the way a panel passes its tier down; inputs that clear the default
@@ -1880,7 +1942,7 @@ dropped `Foreground()` call before it ships.
 
 Every modal composites over the rest of the screen (`AppModel.overlayModal`,
 used for the Details panel and every `activeModal`: confirm, help, theme
-picker, search picker). Before laying the modal on top, `overlayModal` runs
+picker). Before laying the modal on top, `overlayModal` runs
 the page underneath through `chrome.Scrim`, which dims the whole page to one
 flat `TextDim`-on-`BackgroundContent` tier. Without it, a modal only paints
 the columns its own box occupies — any page content in the cells the box
@@ -1925,27 +1987,35 @@ must not invent one.
 **Selectable rows inside a modal** cannot use the tree's lift-to-`ModalBg`
 cursor signal, because the modal's surface *is* `ModalBg` — lifting a row
 onto the tier it already sits on moves the cursor invisibly (the search
-picker shipped that way: the footer advertised `↑/↓` while the highlight was
-pixel-identical to every other row). The theme picker, whose rows are flat
-names, marks its cursor the one way that still contrasts on `ModalBg`: the
-cursor row renders `TextPrimary` **bold**, and every other row renders
-`TextMuted`, both sealed on `ModalBg`. The search picker, whose rows are task
-rows, marks its cursor the way a **selected task** does rather than by tier
-alone: the cursor row gets the `▌` accent bar column plus a `BackgroundElevated`
-lift (`chrome.BarColumn` and `renderTaskCard`'s bar-and-body split, so bar +
-body sum to the row width and the lift reads as a full-width band rather than
-a highlight behind the text) — a *different* tier than `ModalBg`, because
-lifting to `ModalBg` is invisible on a `ModalBg` surface. Every other result
-row sits unselected on `ModalBg` with an invisible (ModalBg-on-ModalBg) bar.
-In both modals unselected rows recede exactly as far as the cursor row stands
-out. In the search picker an **active** list's name is styled exactly like its
-task title — the two read as one label — and only an **archived** list's name
-is drawn in `TextDim` (suffixed with `*`), the dim tier signaling "this is a
-different, non-active kind of list" and explained by a one-line
-`* archived list` legend shown only when the current result set actually
-contains an archived list. The cursor row keeps `TextPrimary bold` on the
-title, never on the list name, so the bold cue and the accent bar both point
-at the one selected row.
+surface shipped that way as a modal: the hint line advertised `↑/↓` while
+the highlight was pixel-identical to every other row). The theme picker,
+whose rows are flat names, marks its cursor the one way that still contrasts
+on `ModalBg`: the cursor row renders `TextPrimary` **bold**, and every other
+row renders `TextMuted`, both sealed on `ModalBg`.
+
+**The Search page's result rows play by the page rules, not the modal
+rules.** Its surface is a body tier, not `ModalBg`, so its rows are task
+rows and use the standard selected-task treatment outright: the cursor row
+gets the `▌` accent bar plus the lift (`chrome.BarColumn` and the shared
+bar-and-body row split, so bar + body sum to the row width and the lift
+reads as a full-width band rather than a highlight behind the text), exactly
+as the task tree's selected row does — the modal-era detour through
+`BackgroundElevated` existed only because the modal's own `ModalBg` surface
+made the standard signal invisible there. Within a row, the characters the
+matcher consumed in the title draw in `Accent`: for a fuzzy title match that
+is the matched subsequence, which may be non-contiguous; a notes-only hit
+highlights nothing in the title, honestly showing that the title did not
+match. The highlight comes from one pure function over (query, title)
+returning the matched spans, table-tested like any rule-heavy function, so
+ranking and rendering can never disagree about what matched. An **active**
+list's name is styled exactly like its task title — the two read as one
+label — and only an **archived** list's name is drawn in `TextDim`
+(suffixed with `*`), the dim tier signaling "this is a different, non-active
+kind of list" and explained by a one-line `* archived list` legend shown
+only when the current result set actually contains an archived list. The
+cursor row keeps `TextPrimary bold` on the title, never on the list name, so
+the bold cue, the accent bar, and the match highlight all point at the one
+selected row.
 
 ### Two shared frames: `chrome.PanelFrame`
 
@@ -2080,7 +2150,7 @@ one is needed, it's added here first.
 | Trailing derived/percentage progress | ` (NN%)` | In `TextDim`, rendered at the start of the row's right-aligned block, immediately left of the agent spinner; omitted entirely when `DerivedProgress` reports `displayAsSimple` (§3), never rendered as `(0%)` in that case. |
 | Task priority | ` ● HIGH` / ` ● MED` / ` ● LOW` | All caps, with a coloured rank dot, in a content-width cell in the right-aligned block immediately left of the trailing icon column. **`none` renders nothing at all**, since most tasks are `none` and a badge on every row is noise rather than information, so the cell is not reserved and rows do not align on it, unlike the fixed icon column. The badge is drawn in the theme's status tokens rather than its text tiers: `high` on `StatusOverdue` (red), `medium` on `StatusInProgress` (amber), `low` on `StatusPending` (grey). The colour ladder is the signal; the all-caps label reads as a sibling of the row's other state indicators. `tasktree.priorityLabel`/`priorityFg`. |
 | Task assignee | ` @tag` | The durable holder of a task (§3), in the right-aligned block immediately right of the agent spinner; the two are adjacent on purpose, because "assigned, but nobody is here" is only legible as a gap between them. The tag is clipped through `chrome.Truncate` to seven cells so one long agent identity cannot push the right block across the row, and an unassigned task renders nothing. `tasktree.assigneeBadge`. |
-| Task assignee: stale | ` @tag` in `StatusOverdue` | The **stale-assignment tier**: `assignee != ""` **and** no live presence claim by that agent (§3). Assignment has no TTL and no background sweeper, and a session releases its own work as it exits, so this badge marks the one case left: a session killed before it could clean up. It is the only thing on screen that distinguishes abandoned work from work merely owned, and the human's `u`/`U` release keys (§5) are the only thing that clears it. Rare by design, not routine. `StatusOverdue` is reused rather than a new token added — it is the same "a human needs to look at this" tier the Details modal and the search picker already draw their error lines in. The live-agent set is read **once per refresh** from the activity set the poll already carries, never per row. `tasktree.assigneeFg`. |
+| Task assignee: stale | ` @tag` in `StatusOverdue` | The **stale-assignment tier**: `assignee != ""` **and** no live presence claim by that agent (§3). Assignment has no TTL and no background sweeper, and a session releases its own work as it exits, so this badge marks the one case left: a session killed before it could clean up. It is the only thing on screen that distinguishes abandoned work from work merely owned, and the human's `u`/`U` release keys (§5) are the only thing that clears it. Rare by design, not routine. `StatusOverdue` is reused rather than a new token added — it is the same "a human needs to look at this" tier the Details modal and the Search page already draw their error lines in. The live-agent set is read **once per refresh** from the activity set the poll already carries, never per row. `tasktree.assigneeFg`. |
 | Agent is working | `⠋⠙⠹⠸⠼⠴⠦⠧` | 1-cell braille spinner, animated via `AnimTickMsg`; draws `Accent` when the row is focused/selected, `TextDim` otherwise. Rendered in the right-aligned block immediately left of the assignee badge when the row's entity is claimed. The `Spinner(frame int)` function lives in `src/components/chrome/Spinner.go`; no component invents its own glyph. |
 | List is collaborative | ` · shared` | Appended to a lists-panel row's count line (`N pending · M done`) when `List.Collaborative` is true — plain text in the same `TextDim` tier the count line already renders in, not a new glyph, so it needs no dedicated symbol here. `src/components/listspanel/View.go`'s `listDelegate.Render`. The rename modal's collaborative toggle (below) reuses the task row's own `◻`/`◼` checkbox glyphs for the same flag, rather than inventing a `[ ]`/`[x]` of its own. |
 
