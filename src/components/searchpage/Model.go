@@ -133,6 +133,14 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// global 2 does from Active).
 		return m, cmds.OpenArchivePage()
 
+	case key.Matches(msg, keys.Global.PageSearch):
+		// 3 is this page's own tab: already home, so this consumes the
+		// keystroke as an idempotent no-op — the digits are never query
+		// characters anywhere in the app (docs/DESIGN.md §5). F is NOT
+		// matched here: it falls through to the input as a printable, so
+		// titles like "Farol v0.4" stay searchable.
+		return m, nil
+
 	case key.Matches(msg, keys.SearchPage.Submit):
 		if len(m.results) == 0 || m.cursor < 0 {
 			return m, nil

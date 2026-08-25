@@ -25,6 +25,22 @@ func TestPickerKeyOpensSearchPage(t *testing.T) {
 	}
 }
 
+// TestDigitThreeOpensSearchPage proves 3 (keys.Global.PageSearch) opens the
+// Search page from Active — the tab pattern the header advertises.
+func TestDigitThreeOpensSearchPage(t *testing.T) {
+	m := seedOneList(t)
+	m = refresh(t, m, tea.WindowSizeMsg{Width: 100, Height: 40})
+
+	m = refresh(t, m, tea.KeyPressMsg{Text: "3"})
+
+	if !m.searchPageVisible() {
+		t.Fatal("3 did not open the Search page")
+	}
+	if m.focusedZone != constants.COMPONENT_SEARCH_PAGE {
+		t.Fatalf("focusedZone = %d, want COMPONENT_SEARCH_PAGE", m.focusedZone)
+	}
+}
+
 // TestEscOnSearchPageReturnsToActive pins the esc contract: the page closes
 // onto Active with focus back on the task tree — search is a visit, not a
 // destination (docs/DESIGN.md §5).

@@ -18,10 +18,11 @@ func TestHeaderRendersWordmark(t *testing.T) {
 	}
 }
 
-// TestHeaderRendersBothTabs proves the header always shows both page tabs,
-// digit-prefixed (1 Active, 2 Archived) — the primary navigation, never
-// dropped for width the way the mode/version are (docs/DESIGN.md §5).
-func TestHeaderRendersBothTabs(t *testing.T) {
+// TestHeaderRendersAllThreeTabs proves the header always shows the three
+// page tabs, digit-prefixed (1 Active, 2 Archived, 3 Search) — the primary
+// navigation, never dropped for width the way the mode/version are
+// (docs/DESIGN.md §5).
+func TestHeaderRendersAllThreeTabs(t *testing.T) {
 	m := New()
 	updated, _ := m.(Model).Update(cmds.SetBodyLayoutMsg{TerminalWidth: 80})
 
@@ -31,6 +32,9 @@ func TestHeaderRendersBothTabs(t *testing.T) {
 	}
 	if !strings.Contains(out, "2 Archived") {
 		t.Errorf("header does not render the Archived tab:\n%s", out)
+	}
+	if !strings.Contains(out, "3 Search") {
+		t.Errorf("header does not render the Search tab:\n%s", out)
 	}
 }
 
@@ -66,6 +70,23 @@ func TestHeaderHighlightsArchivedTabWhilePageIsOpen(t *testing.T) {
 	}
 	if strings.Contains(out, "▌ 1 Active") {
 		t.Errorf("the Active tab is still highlighted while the Archive page is open:\n%s", out)
+	}
+}
+
+// TestHeaderHighlightsSearchTabWhilePageIsOpen pins the third tab's accent
+// bar: while the Search page is open neither of the other two tabs may claim
+// the highlight (docs/DESIGN.md §5).
+func TestHeaderHighlightsSearchTabWhilePageIsOpen(t *testing.T) {
+	m := New()
+	updated, _ := m.(Model).Update(cmds.SetBodyLayoutMsg{TerminalWidth: 80})
+	updated, _ = updated.(Model).Update(cmds.OpenSearchPageMsg{})
+
+	out := ansi.Strip(updated.(Model).View().Content)
+	if !strings.Contains(out, "▌ 3 Search") {
+		t.Errorf("the Search tab is not highlighted while the Search page is open:\n%s", out)
+	}
+	if strings.Contains(out, "▌ 1 Active") || strings.Contains(out, "▌ 2 Archived") {
+		t.Errorf("another tab is still highlighted while the Search page is open:\n%s", out)
 	}
 }
 

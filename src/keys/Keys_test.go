@@ -25,6 +25,7 @@ func TestGlobalBindingsAreFixed(t *testing.T) {
 		{"Picker", Global.Picker, "F"},
 		{"PageActive", Global.PageActive, "1"},
 		{"PageArchived", Global.PageArchived, "2"},
+		{"PageSearch", Global.PageSearch, "3"},
 	}
 
 	for _, tc := range cases {

@@ -198,6 +198,26 @@ func TestDigitTwoLeavesForArchivePage(t *testing.T) {
 	}
 }
 
+// TestDigitThreeOnSearchPageIsInert proves 3 on the Search page itself is an
+// idempotent no-op that still consumes the keystroke — the page stays up and
+// the digit never reaches the query input (docs/DESIGN.md §5).
+func TestDigitThreeOnSearchPageIsInert(t *testing.T) {
+	s := testStore(t)
+	seedTasks(t, s, "Errands", []string{"Buy milk"})
+
+	m := focusedPage(t, s)
+	m = typeQuery(t, m, "milk")
+
+	out, cmd := m.Update(tea.KeyPressMsg{Code: '3', Text: "3"})
+	m = out.(Model)
+	if cmd != nil {
+		t.Fatalf("3 on the Search page produced %v, want nil", cmd())
+	}
+	if m.input.Value() != "milk" {
+		t.Errorf("query = %q, want unchanged (digits are never query characters)", m.input.Value())
+	}
+}
+
 // TestCursorMovesAndIsVisible adapts the modal-era regression: up/down move
 // the cursor AND the movement must be visible — exactly one result row
 // carries the bold selected treatment, and pressing down moves that treatment

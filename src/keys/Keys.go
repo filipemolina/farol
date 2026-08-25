@@ -50,15 +50,19 @@ type GlobalKeys struct {
 	Sort key.Binding
 	// About opens the about modal.
 	About key.Binding
-	// PageActive (1) and PageArchived (2) switch the top-level page — the
-	// Active tasks page (Tasks/Lists, today's default) and the Archived
-	// Lists page — the same digit-tab scheme ../cais's mainmenu uses
-	// (docs/DESIGN.md §5). Both work from anywhere no text input owns the
-	// keyboard, including from inside the other page: PageActive is the
-	// Archive page's own way to leave (alongside esc), mirroring cais's
-	// pageForNavKey working regardless of which page is currently active.
+	// PageActive (1), PageArchived (2), and PageSearch (3) switch the
+	// top-level page — the Active tasks page (Tasks/Lists, today's default),
+	// the Archived Lists page, and the cross-list Search page — the same
+	// digit-tab scheme ../cais's mainmenu uses (docs/DESIGN.md §5). All work
+	// from anywhere no text input owns the keyboard, including from inside
+	// another page: PageActive is the Archive page's own way to leave
+	// (alongside esc), mirroring cais's pageForNavKey working regardless of
+	// which page is currently active. On the Search page the digits are
+	// matched by the page's own handler ahead of the query input, so a query
+	// can never contain one.
 	PageActive   key.Binding
 	PageArchived key.Binding
+	PageSearch   key.Binding
 }
 
 // TaskTreeKeys act on the task tree: navigation, expand/collapse, toggling
@@ -268,6 +272,7 @@ var Global = GlobalKeys{
 	About:            key.NewBinding(key.WithKeys("a"), key.WithHelp("a", "about")),
 	PageActive:       key.NewBinding(key.WithKeys("1"), key.WithHelp("1", "active")),
 	PageArchived:     key.NewBinding(key.WithKeys("2"), key.WithHelp("2", "archived")),
+	PageSearch:       key.NewBinding(key.WithKeys("3"), key.WithHelp("3", "search")),
 }
 
 var Tree = TaskTreeKeys{
@@ -691,7 +696,7 @@ func Catalog(ctx Context) []Scope {
 			Title: "Global",
 			Entries: entries(
 				Global.NextPanel, Global.PrevPanel, Global.ToggleListsPanel,
-				Global.PageActive, Global.PageArchived,
+				Global.PageActive, Global.PageArchived, Global.PageSearch,
 				Global.Back, Global.Quit, Global.ForceQuit, Global.Help,
 				Global.Theme, Global.Filter, Global.Picker, Global.Sort,
 				Global.CopyID, Global.About,
@@ -758,7 +763,7 @@ func pressableNow(ctx Context) []key.Binding {
 	// When a modal owns the keyboard, or the user is typing a create or
 	// filter input, only the always-available keys remain pressable.
 	if !ctx.HasModal && !ctx.Creating && !ctx.Filtering {
-		live = append(live, Global.Back, Global.Theme, Global.ToggleListsPanel, Global.PageActive, Global.PageArchived, Global.Filter, Global.Picker, Global.Sort, Global.CopyID)
+		live = append(live, Global.Back, Global.Theme, Global.ToggleListsPanel, Global.PageActive, Global.PageArchived, Global.PageSearch, Global.Filter, Global.Picker, Global.Sort, Global.CopyID)
 	}
 
 	// shift+tab is tab's twin: live wherever tab is.

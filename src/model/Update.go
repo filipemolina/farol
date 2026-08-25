@@ -177,18 +177,23 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				finalCmds = append(finalCmds, cmds.OpenAboutModal())
 			}
 
-		// PageActive (1) and PageArchived (2) switch the top-level page. This
-		// switch only runs while the Archive page isn't already capturing
-		// keys (see its own early-return block above), i.e. we're already on
-		// Active — so PageActive is a no-op here and PageArchived is the only
-		// one that does anything. Leaving the Archive page for Active is
-		// handled inside archivepage's own handleKey (docs/DESIGN.md §5),
-		// the same way its esc ladder is.
+		// PageActive (1), PageArchived (2), and PageSearch (3) switch the
+		// top-level page. This switch only runs while no page capture is
+		// ahead of it (see the early-return blocks above), i.e. we're on
+		// Active — so PageActive is a no-op here and the other two open
+		// their pages. Leaving a page for another is handled inside that
+		// page's own handleKey (docs/DESIGN.md §5), the same way its esc
+		// handling is.
 		case key.Matches(msg, keys.Global.PageActive):
 
 		case key.Matches(msg, keys.Global.PageArchived):
 			if !keyboardOwned() {
 				finalCmds = append(finalCmds, cmds.OpenArchivePage())
+			}
+
+		case key.Matches(msg, keys.Global.PageSearch):
+			if !keyboardOwned() {
+				finalCmds = append(finalCmds, cmds.OpenSearchPage())
 			}
 
 		// / enters a local filter: the task tree's fuzzy filter when the tree

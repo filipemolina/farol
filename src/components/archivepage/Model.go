@@ -337,6 +337,12 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, keys.Global.Picker):
 		return m, cmds.OpenSearchPage()
 
+	// 3 opens the Search page the same way — its own tab in the header, so
+	// the digit contract stays uniform while this page owns every keypress
+	// (docs/DESIGN.md §5).
+	case key.Matches(msg, keys.Global.PageSearch):
+		return m, cmds.OpenSearchPage()
+
 	case key.Matches(msg, keys.ArchivePage.Filter):
 		// The filter row lives in the archived-list column, so typing into
 		// it always brings that column's focus back — the same way pressing
