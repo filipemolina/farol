@@ -195,7 +195,7 @@ func (m AppModel) renderBody() string {
 // the terminal loses its bottom edge rather than scrolling). Both the Task
 // details modal and the activeModal overlays go through here, so scrimming
 // base here — rather than in each modal — dims the page behind every one of
-// them (confirm, help, theme picker, search picker, details) the same way.
+// them (confirm, help, theme picker, details) the same way.
 func (m AppModel) overlayModal(base, modalContent string) string {
 	x := max(0, (m.terminalWidth-lipgloss.Width(modalContent))/2)
 	y := max(0, (m.terminalHeight-lipgloss.Height(modalContent))/2)

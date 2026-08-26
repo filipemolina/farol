@@ -175,7 +175,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case cmds.RevealArchivedTaskMsg:
-		// The search picker's Enter on an archived result, arriving after
+		// The Search page's Enter on an archived result, arriving after
 		// AppModel opened the page. Remember what to reveal, then apply it if
 		// the archived set is already loaded; otherwise handleRefreshArchived
 		// applies it once the lists arrive.
@@ -230,7 +230,7 @@ func (m Model) handleRefreshArchivedLists(msg cmds.RefreshArchivedListsMsg) (tea
 		return m, nil
 	}
 	m.entries = msg.Lists
-	// A pending reveal (the search picker's archived result) applies once the
+	// A pending reveal (the Search page's archived result) applies once the
 	// archived set is populated: select the result's list, scroll to it, and
 	// load its preview so the task can be marked. Direct opens (no reveal)
 	// clamp to the top as before.

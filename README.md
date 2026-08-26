@@ -4,7 +4,7 @@
 
 ![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-![Status](https://img.shields.io/badge/status-v0.4.1-blue)
+![Status](https://img.shields.io/badge/status-v0.4.3-blue)
 
 <p align="center"><img src="./assets/farol-banner.svg" alt="Farol" width="760"></p>
 
@@ -65,7 +65,7 @@ There has to be a better way to do this (I'm absolutely certain there is). Well,
 | Main view | Add task | Search |
 |-----------|----------|--------|
 |![Main view](demo/screenshot-main.png)|![Add task](demo/screenshot-add.png)|![Search](demo/screenshot-search.png)|
-|Tasks (left) + lists (right)|Inline add with level indicator|Global search picker|
+|Tasks (left) + lists (right)|Inline add with level indicator|Global search|
 
 | Theme picker | Help | Complete section |
 |--------------|------|------------------|

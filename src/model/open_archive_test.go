@@ -8,7 +8,7 @@ import (
 	"github.com/filipemolina/farol/src/constants"
 )
 
-// OpenArchivedTaskMsg — the search picker's Enter on a result whose list is
+// OpenArchivedTaskMsg — The Search page's Enter on a result whose list is
 // archived — must open the Archive page and, crucially, must NOT switch the
 // active list to the archived one. Archive lists cannot be an active list, so
 // the old JumpToTask path briefly loaded the archived list on the Tasks panel

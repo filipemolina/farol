@@ -858,7 +858,7 @@ func assigneeBadge(assignee, liveAgent string) string {
 // assigneeFg is the stale-assignment tier (docs/DESIGN.md §12): an assignee
 // with a live presence claim is ordinary row chrome (TextMuted), and one
 // without is the warning token StatusOverdue — the same "something here needs
-// a human" tier the Details modal and the search picker already use for their
+// a human" tier the Details modal and the Search page already use for their
 // error lines. An assignment has no TTL, so this badge is the only thing on
 // screen that says the work was abandoned rather than merely owned.
 func assigneeFg(live bool) color.Color {

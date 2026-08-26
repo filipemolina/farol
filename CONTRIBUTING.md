@@ -101,7 +101,7 @@ main.go              # cobra root: no subcommand launches the TUI, else dispatch
 src/
 ├── model/           # AppModel: Init/Update/View, the top-level Bubble Tea model
 ├── components/      # one package per leaf model (tasktree, taskspanel,
-│                     # listspanel, detailspanel, themepickermodal, searchpicker,
+│                     # listspanel, detailspanel, themepickermodal, searchpage,
 │                     # listnamemodal, confirmmodal, helpoverlay, keybindingbar,
 │                     # mainmenu)
 │   └── chrome/       # shared rendering: PanelFrame, tree-row rendering, the

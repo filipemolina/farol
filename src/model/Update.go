@@ -198,7 +198,7 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// / enters a local filter: the task tree's fuzzy filter when the tree
 		// is focused, the lists panel's filter when the lists panel is.
-		// F opens the cross-list picker. Both are global keys — they work
+		// F opens the Search page. Both are global keys — they work
 		// whenever no modal owns the keyboard, and the filter's target
 		// follows focus (docs/DESIGN.md §5).
 		case key.Matches(msg, keys.Global.Filter):
@@ -283,7 +283,7 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// consumes it. Both rename and delete act on the panel's highlighted
 		// list, not on the list open in the tasks panel: the two diverge
 		// whenever the active list changes without the panel cursor moving (the
-		// global picker jumping to another list, or a delete ahead of the
+		// Search page jumping to another list, or a delete ahead of the
 		// cursor).
 		case m.listsPanelVisible && m.focusedZone == constants.COMPONENT_LISTS_PANEL && !keyboardOwned() && key.Matches(msg, keys.Lists.New):
 			m.activeModal = listnamemodal.New(listnamemodal.ModeNew, "", m.store)
@@ -494,7 +494,7 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// A RefreshTasksMsg for a list other than the active one is a stale
 		// snapshot: RefreshTasks is only ever queued with the activeListID at
 		// the moment it is scheduled, so a ListID that no longer matches means
-		// the command raced a list switch (the picker's jump, below). The task
+		// the command raced a list switch (the Search page's jump, below). The task
 		// tree adopts whatever list a refresh carries, so applying a stale
 		// refresh would reset the selection the jump just landed on — the
 		// "lands on the right task, then jumps to another one" bug. AppModel
@@ -558,7 +558,7 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case cmds.OpenImportModalMsg:
 		m.activeModal = importexportmodal.NewImport(m.store, m.terminalWidth)
 
-	// The global picker jumped to a task, possibly in another list: switch
+	// The Search page jumped to a task, possibly in another list: switch
 	// the active list to the result's list (when different) and move the tree
 	// selection to the task. SelectTask is sent unconditionally — if the task
 	// is already in rows it selects immediately, and if the list just changed

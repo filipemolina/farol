@@ -19,13 +19,14 @@ Work anywhere that no overlay owns the keyboard.
 | `L` | Toggle the Lists panel; opening it also moves focus into it. |
 | `1` | Switch to the Active page (Tasks and Lists) — works from anywhere, including from inside the Archived Lists page. |
 | `2` | Switch to the Archived Lists page — a full-screen surface that replaces Tasks and Lists, not a modal. Works from anywhere. |
+| `3` | Switch to the Search page — a full-screen cross-list search that replaces Tasks and Lists, not a modal. Works from anywhere. `F` is an alias for this tab. |
 | `q` | Quit — yields to anything typing a `q` (a modal, the inline create row, a filter). |
 | `ctrl+c` | Force quit — yields to nothing, so it quits from a modal or a text input alike. |
 | `esc` | Back — a ladder of claims: closes a modal, closes the Details modal, clears/closes the Archive page's own filter-then-page ladder, clears a filter being typed, clears an applied filter, closes the Lists panel. |
 | `?` | Help overlay. |
 | `T` | Theme picker (live preview; `Enter` applies and persists). |
 | `/` | Local fuzzy filter — the task tree when the tree is focused, the Lists panel when the panel is. |
-| `F` | Cross-list search picker. |
+| `F` | Cross-list Search page — alias for the `3` tab; a full-screen surface that replaces Tasks and Lists, not a modal. |
 | `ctrl+y` | Copy the selected item's id (task or list) to the system clipboard. |
 | `s` | Cycle the task tree's sort mode: manual → priority → created → updated → alpha. |
 | `a` | About modal. |

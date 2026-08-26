@@ -42,7 +42,7 @@ type GlobalKeys struct {
 	Theme key.Binding
 	// Filter enters (/) the task tree's local fuzzy filter.
 	Filter key.Binding
-	// Picker opens (F) the cross-list search picker.
+	// Picker opens (F) the cross-list Search page (an alias for the 3 tab).
 	Picker key.Binding
 	// CopyID copies the currently selected item's ID (task or list).
 	CopyID key.Binding

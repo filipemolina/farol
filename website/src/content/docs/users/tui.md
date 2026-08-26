@@ -7,7 +7,7 @@ sidebar:
 
 This page is the reference for the person at the keyboard. If you are setting up an agent to drive farol from a shell, see [Working with coding agents](/users/agents/); if you want the shape of every command, see [The CLI](/users/cli/).
 
-The header bar at the top of the screen shows two pages, `1 Active` and `2 Archived` — press `1`/`2` to jump between them from anywhere, the way most terminal apps' tabs work. The TUI is two body surfaces — **Lists** on the left, **Tasks** on the right — plus a **Details modal** that layers over both, and an **Archived Lists page** (`2`) that replaces both while it's open, and a footer bar that advertises the keys live right now. `tab`/`shift+tab` cycle focus between the surfaces that are actually visible; `↑`/`↓` (or `k`/`j`) move the cursor.
+The header bar at the top of the screen shows three pages, `1 Active`, `2 Archived`, and `3 Search` — press `1`/`2`/`3` (or `F` for Search) to jump between them from anywhere, the way most terminal apps' tabs work. The TUI is two body surfaces — **Lists** on the left, **Tasks** on the right — plus a **Details modal** that layers over both, and an **Archived Lists page** (`2`) that replaces both while it's open, and a footer bar that advertises the keys live right now. `tab`/`shift+tab` cycle focus between the surfaces that are actually visible; `↑`/`↓` (or `k`/`j`) move the cursor.
 
 ## The task tree
 
@@ -126,7 +126,7 @@ There is no key to *archive* a list from the TUI yet — do that from the CLI (`
 ## Filtering and search
 
 - **`/`** enters a local fuzzy filter whose target follows focus: it narrows the task tree's rows in place to each match plus its ancestor chain, or the lists panel's rows the same way. The filter is live — it re-narrows on every keystroke. `enter` applies the query and leaves the filtered view active so the cursor can walk the results; `esc` clears it. Matched characters are highlighted in the accent color; rows kept only as ancestors render elided as `[…] <title>`.
-- **`F`** opens the cross-list search picker: a text input searches every list live, ranking title matches before notes-only hits, and showing each result as `<list> › <task>`. `enter` on a result jumps to that task, switching the active list when the match lives elsewhere; `esc` cancels.
+- **`F`** (alias for `3`) opens the **Search page**, a full-body takeover like the Archived page: a query input searches every list live (archived lists included), and each result shows `<list> › <title>` with matched characters accented in the accent color. `↑`/`↓` move the cursor (`j`/`k` stay query characters, never cursor moves); `enter` jumps to the task, or reveals it on the Archived page when its list is archived; `esc` closes the page back onto Active. The query, results, and cursor persist across visits, and the digit keys never become query characters. The footer stays live, advertising navigate/open/back.
 
 ## Deleting
 
