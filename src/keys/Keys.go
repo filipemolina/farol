@@ -519,13 +519,18 @@ func Active(ctx Context) []key.Binding {
 	// does just above: only its own bindings plus Esc are live — no
 	// task-tree, Lists, tab, search, theme, or panel-toggle key acts
 	// (docs/DESIGN.md §5). PageActive (1) is also live here — it is the
-	// Archive page's second way to leave, alongside Esc.
+	// Archive page's second way to leave, alongside Esc. F (Picker) and 3
+	// (PageSearch) are the page's other ways out: they open the Search page,
+	// and since the Archive page owns every keypress its handleKey matches
+	// them directly — the help overlay (the only place these keys get
+	// advertised, because the Archive page's footer blanks) must show them
+	// as live.
 	if ctx.ArchivePageVisible {
 		return []key.Binding{
 			ArchivePage.Navigate, ArchivePage.GoToStart, ArchivePage.GoToEnd,
 			ArchivePage.FocusPreview,
 			ArchivePage.Filter, ArchivePage.Unarchive, ArchivePage.Delete,
-			Global.Back, Global.PageActive,
+			Global.Back, Global.PageActive, Global.Picker, Global.PageSearch,
 		}
 	}
 
@@ -626,6 +631,13 @@ func GlobalsFor(ctx Context) []key.Binding {
 	}
 	if !ctx.ListsPanelVisible && !ctx.DetailsPanelVisible {
 		out = withoutBindings(out, Global.NextPanel, Global.PrevPanel)
+	}
+	// The Search page owns the keyboard: none of the globals act while it is
+	// open (tab/shift+tab fall through to the query input, ? types a literal),
+	// so the footer must not advertise them (docs/DESIGN.md §5 — the footer
+	// advertises navigate/open/back only).
+	if ctx.SearchPageVisible {
+		out = withoutBindings(out, Global.NextPanel, Global.PrevPanel, Global.Help)
 	}
 	return out
 }

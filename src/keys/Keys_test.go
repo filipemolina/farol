@@ -197,7 +197,7 @@ func TestActiveReturnsArchivePageBindingsWhenVisible(t *testing.T) {
 		ArchivePage.Navigate, ArchivePage.GoToStart, ArchivePage.GoToEnd,
 		ArchivePage.FocusPreview,
 		ArchivePage.Filter, ArchivePage.Unarchive, ArchivePage.Delete,
-		Global.Back, Global.PageActive,
+		Global.Back, Global.PageActive, Global.Picker, Global.PageSearch,
 	}
 	if len(bindings) != len(want) {
 		t.Fatalf("expected %d Archive page bindings, got %d: %v", len(want), len(bindings), bindings)
@@ -214,14 +214,52 @@ func TestActiveReturnsArchivePageBindingsWhenVisible(t *testing.T) {
 	// three "↑/↓ navigate", both "d delete"), and sameBinding compares by
 	// content, not identity — they are legitimately indistinguishable that
 	// way, so it would be a false positive here, not a real leak.
+	// Picker (F) and PageSearch (3) ARE live here: the Archive page's
+	// handleKey matches them to open the Search page, so they must be
+	// advertised (the footer blanks, so the overlay is their only ad).
 	for _, banned := range []key.Binding{
 		Tree.OpenDetails, Lists.New,
-		Global.NextPanel, Global.Picker, Global.Theme, Global.ToggleListsPanel,
+		Global.NextPanel, Global.Theme, Global.ToggleListsPanel,
 		Global.PageArchived,
 	} {
 		if containsBinding(bindings, banned) {
 			t.Errorf("Archive page context wrongly advertises %q", banned.Help().Key)
 		}
+	}
+}
+
+// TestGlobalsForSearchPageOmitsGlobals proves the footer's right-hand globals
+// are all dropped while the Search page is open: the page owns the keyboard, so
+// tab/shift+tab fall through to the query input and ? types a literal — none of
+// the three act, so GlobalsFor must return nothing (docs/DESIGN.md §5 — the
+// footer advertises navigate/open/back only).
+func TestGlobalsForSearchPageOmitsGlobals(t *testing.T) {
+	out := GlobalsFor(Context{SearchPageVisible: true, ListsPanelVisible: true})
+	if len(out) != 0 {
+		t.Errorf("GlobalsFor with SearchPageVisible should return no bindings, got %v", out)
+	}
+}
+
+// TestActiveArchivePageContainsPickerAndPageSearch proves the Archive page's
+// Active set advertises F (Picker) and 3 (PageSearch): its handleKey matches
+// them to open the Search page, and since the Archive page's footer blanks, the
+// help overlay is the only place those keys get advertised. PageActive (1) must
+// still be present.
+func TestActiveArchivePageContainsPickerAndPageSearch(t *testing.T) {
+	ctx := Context{
+		Focused:            constants.COMPONENT_ARCHIVE_PAGE,
+		ArchivePageVisible: true,
+		HasActiveList:      true,
+	}
+	bindings := Active(ctx)
+	if !containsBinding(bindings, Global.Picker) {
+		t.Error("Active for Archive page must advertise Picker (F)")
+	}
+	if !containsBinding(bindings, Global.PageSearch) {
+		t.Error("Active for Archive page must advertise PageSearch (3)")
+	}
+	if !containsBinding(bindings, Global.PageActive) {
+		t.Error("Active for Archive page must still advertise PageActive (1)")
 	}
 }
 
