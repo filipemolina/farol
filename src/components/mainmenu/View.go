@@ -89,34 +89,50 @@ func (m Model) View() tea.View {
 		Background(appstyles.Active.BackgroundContent)
 
 	wordmark := wordmarkStyle.Render(constants.WORDMARK)
-	version := versionStyle.Render(constants.Version())
 
-	// The view-mode indicator (low-emphasis, like pulso's "all . pulso-dusk .
-	// v0.3.0") sits left of the version, separated the same way. It sheds
-	// before the version does: the mode is the tree's own transient state,
-	// the version is the app's identity, and a narrow terminal gives up the
-	// less load-bearing one first.
+	// The right cluster is the view-mode indicator and the version, joined
+	// by " . " only between pieces that are actually present — pulso's
+	// "all . pulso-dusk . v0.3.0" look without a separator dangling off an
+	// end. An unstamped build reports "unknown", which is identity noise
+	// rather than information, so it renders as no version at all.
 	//
-	// It is blank while a page other than Active is on screen: Pending/
-	// Complete/All describes the task tree, which the Archive and Search
-	// pages replace, and which page is on screen is carried by the tabs
-	// themselves rather than a text label taking over this slot.
-	mode := ""
+	// The cluster is blank while a page other than Active is on screen:
+	// Pending/Complete/All describes the task tree, which the Archive and
+	// Search pages replace, and which page is on screen is carried by the
+	// tabs themselves rather than a text label taking over this slot.
+	modeText := ""
 	if m.page == apptypes.PageActive && m.treeView != "" {
-		mode = versionStyle.Render(viewModeIcon + " " + m.treeView + " . ")
+		modeText = viewModeIcon + " " + m.treeView
+	}
+	versionText := constants.Version()
+	if versionText == "unknown" {
+		versionText = ""
+	}
+	var right string
+	switch {
+	case modeText != "" && versionText != "":
+		right = versionStyle.Render(modeText + " . " + versionText)
+	case modeText != "":
+		right = versionStyle.Render(modeText)
+	case versionText != "":
+		right = versionStyle.Render(versionText)
 	}
 
-	// Drop the version, then the mode, when they would crowd the wordmark.
-	// The tabs are never dropped — like cais's, they are the header's
-	// primary navigation, not decoration.
-	if lipgloss.Width(tabs)+lipgloss.Width(wordmark)+lipgloss.Width(mode)+lipgloss.Width(version)+versionGutter > m.terminalWidth {
-		mode = ""
+	// Shed the cluster outward-in when it would crowd the wordmark: the
+	// version first (static identity), then the mode (live state the user
+	// checks — shedding the mode first blanked the tree-filter indicator at
+	// everyday widths once the third tab tightened this budget). The tabs
+	// and the wordmark never shed: the tabs are the primary navigation, the
+	// wordmark the header's identity.
+	fixedWidth := lipgloss.Width(tabs) + lipgloss.Width(wordmark) + versionGutter
+	if fixedWidth+lipgloss.Width(right) > m.terminalWidth && modeText != "" {
+		right = versionStyle.Render(modeText)
 	}
-	if lipgloss.Width(tabs)+lipgloss.Width(wordmark)+lipgloss.Width(version)+versionGutter > m.terminalWidth {
-		version = ""
+	if fixedWidth+lipgloss.Width(right) > m.terminalWidth {
+		right = ""
 	}
 
-	gapWidth := m.terminalWidth - lipgloss.Width(tabs) - lipgloss.Width(mode) - lipgloss.Width(version) - lipgloss.Width(wordmark)
+	gapWidth := m.terminalWidth - fixedWidth - lipgloss.Width(right)
 	if gapWidth < 0 {
 		gapWidth = 0
 	}
@@ -126,6 +142,6 @@ func (m Model) View() tea.View {
 		Width(gapWidth).
 		Render("")
 
-	row := lipgloss.JoinHorizontal(lipgloss.Left, tabs, gap, mode, version, wordmark)
+	row := lipgloss.JoinHorizontal(lipgloss.Left, tabs, gap, right, wordmark)
 	return tea.NewView(barStyle.Render(row))
 }

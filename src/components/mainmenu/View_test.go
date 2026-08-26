@@ -123,6 +123,42 @@ func TestHeaderTabsStayMutuallyExclusive(t *testing.T) {
 	}
 }
 
+// TestHeaderKeepsModeIndicatorAcrossModes is the regression for the
+// three-tab budget: pending/complete used to shed at everyday widths while
+// "all" (shorter) survived, reading as the indicator vanishing whenever the
+// filter left all.
+func TestHeaderKeepsModeIndicatorAcrossModes(t *testing.T) {
+	for _, mode := range []string{"all", "pending", "complete"} {
+		m := New()
+		updated, _ := m.(Model).Update(cmds.SetBodyLayoutMsg{TerminalWidth: 72})
+		updated, _ = updated.(Model).Update(cmds.SetTaskTreeViewMsg{View: mode})
+
+		out := ansi.Strip(updated.(Model).View().Content)
+		if !strings.Contains(out, "⇅ "+mode) {
+			t.Errorf("view mode %q missing from the header at 72 columns:\n%s", mode, out)
+		}
+	}
+}
+
+// TestHeaderRightClusterNeverDanglesSeparator pins the separator rule: " . "
+// joins two present pieces and nothing else — no line ends in a bare dot,
+// and an unstamped ("unknown") build renders no version piece at all.
+func TestHeaderRightClusterNeverDanglesSeparator(t *testing.T) {
+	m := New()
+	updated, _ := m.(Model).Update(cmds.SetBodyLayoutMsg{TerminalWidth: 100})
+	updated, _ = updated.(Model).Update(cmds.SetTaskTreeViewMsg{View: "all"})
+
+	out := ansi.Strip(updated.(Model).View().Content)
+	if strings.Contains(out, "unknown") {
+		t.Errorf("unstamped version leaked into the header:\n%s", out)
+	}
+	for _, line := range strings.Split(out, "\n") {
+		if strings.HasSuffix(strings.TrimRight(line, " "), ".") {
+			t.Errorf("header line ends in a dangling separator:\n%s", line)
+		}
+	}
+}
+
 // TestHeaderDefaultsToAllView pins the header's view-mode indicator to
 // "all" before any SetTaskTreeViewMsg arrives, matching the tree's own
 // ViewAll default (docs/DESIGN.md §6) — the header must never claim a mode
