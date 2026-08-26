@@ -17,10 +17,10 @@
 # frame is the app, not the shell prompt that follows it. The demo walks the
 # v view-mode cycle on the seeded list, opens the lists panel, creates a
 # list, adds a root task and a nested subtask (one level deep via ]),
-# previews the theme picker, then opens the Archived Lists page (2) to show
-# the seeded archived list and its task preview. seed.sh pins farol-dark, the
-# brand navy/amber palette the landing page is built from, so the whole
-# walkthrough runs in it.
+# previews the theme picker, runs a cross-list search (F, the third tab),
+# then opens the Archived Lists page (2) to show the seeded archived list
+# and its task preview. seed.sh pins farol-dark, the brand navy/amber palette
+# the landing page is built from, so the whole walkthrough runs in it.
 
 Output demo/demo.gif
 
@@ -151,6 +151,19 @@ Down
 Sleep 2500ms
 Escape
 Sleep 2000ms
+
+# --- Global search across lists ----------------------------------------------
+# F opens the Search page (the third tab, 3). "timeout" is the query the seed
+# is built for: "Raise the gateway timeout" (infra) matches on title and ranks
+# above "Cut the p95 on /search" (api), which matches on notes only — one
+# screen, two lists, and the documented ranking rule. Enter jumps to the
+# highlighted result, switching the active list to infra.
+Type@1ms "F"
+Sleep 1200ms
+Type "timeout"
+Sleep 2000ms
+Enter
+Sleep 1500ms
 
 # --- Archive page: browse the archived list + its task preview, then back --
 # 2 opens the Archived Lists page, the top nav's second tab

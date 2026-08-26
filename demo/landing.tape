@@ -189,7 +189,7 @@ Sleep 1500ms
 Screenshot demo/landing-tree.png
 
 # --- Close the Lists panel for the search shot ------------------------------
-# L toggles the panel that has been open since launch, so the search modal
+# L toggles the panel that has been open since launch, so the Search page
 # reads against a full-width tree instead of competing with a sidebar. A
 # separate "lists panel" still was recorded here and dropped: with the panel
 # open in the hero already, it was the same frame minus the panel.

@@ -89,7 +89,7 @@ Screenshot website/public/screenshot-theme-dark.png
 Escape
 Sleep 600ms
 
-# --- Global search picker --------------------------------------------------
+# --- Global search ---------------------------------------------------------
 Type "F"
 Sleep 800ms
 Type "timeout"

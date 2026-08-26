@@ -79,7 +79,7 @@ Screenshot demo/screenshot-theme.png
 Escape
 Sleep 600ms
 
-# --- Global search picker --------------------------------------------------
+# --- Global search ---------------------------------------------------------
 # "timeout" is the query the seed is built for: "Raise the gateway timeout"
 # (infra) matches on title and ranks above "Cut the p95 on /search" (api),
 # which matches on notes only. One shot, two lists, and the documented
