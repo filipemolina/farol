@@ -618,6 +618,92 @@ func TestOpenArchivePageMsgResetsFocusAndScroll(t *testing.T) {
 	}
 }
 
+// TestRevealReappliesWhenPreviewAlreadyLoaded is a regression test for the
+// bug where a search-result reveal silently failed on a second visit to a list
+// whose preview was already loaded from a previous visit. The Archive page
+// keeps previewListID/previewRows across close/reopen (only OpenArchivePageMsg
+// resets them), so on the second reveal loadPreviewIfSelectionChanged saw
+// previewListID == targetListID, returned nil, and never reloaded the preview —
+// leaving findAndHighlightRevealTask unrun, the task unmarked, and revealTarget
+// leaking forever. The fix clears previewListID inside applyReveal so the reload
+// always happens; this test proves the re-reveal issues a preview reload
+// command and the task gets re-marked with revealTarget cleared.
+//
+// It also pins the dedupe that keeps the fix from introducing a double-load
+// race: the real-app batch delivers RevealArchivedTaskMsg and then
+// RefreshArchivedListsMsg, each re-running applyReveal. The first must kick a
+// load (stale rows: previewListID == target with previewLoading false); the
+// second must NOT stack a duplicate (the first load is still in flight:
+// previewListID == target with previewLoading true). Two loads would each
+// reset highlightedTaskID on arrival and the last would wipe the mark.
+func TestRevealReappliesWhenPreviewAlreadyLoaded(t *testing.T) {
+	m, s := manyArchivedListsModel(t, 20)
+	// Give "target" a task to reveal.
+	targetLis, err := s.CreateList("target", "")
+	if err != nil {
+		t.Fatalf("create target list: %v", err)
+	}
+	if err := s.ArchiveList(targetLis); err != nil {
+		t.Fatalf("archive target list: %v", err)
+	}
+	targetTask, err := s.CreateTask(targetLis, "needle task", nil, "")
+	if err != nil {
+		t.Fatalf("create target task: %v", err)
+	}
+
+	// Reload entries so "target" is present.
+	m = step(t, m, cmds.RefreshArchivedListsMsg{Lists: apptypes.FromStoreLists(mustArchivedLists(t, s))})
+
+	rows := []apptypes.Row{{Task: apptypes.Task{ID: targetTask, Title: "needle task"}}}
+
+	// Visit 1: reveal, then deliver the preview for the revealed list.
+	m = step(t, m, cmds.RevealArchivedTaskMsg{TaskID: targetTask, ListID: targetLis})
+	m = step(t, m, cmds.RefreshArchivedListPreviewMsg{ListID: targetLis, Rows: rows})
+	if m.highlightedTaskID != targetTask {
+		t.Fatalf("visit 1: highlightedTaskID = %q, want %q", m.highlightedTaskID, targetTask)
+	}
+	if m.revealTarget != nil {
+		t.Fatal("visit 1: revealTarget should be cleared after the preview marks the task")
+	}
+
+	// Close the page: state persists (CloseArchivePageMsg has no case in the
+	// page's Update, so previewListID/previewRows survive the close).
+	m = step(t, m, cmds.CloseArchivePageMsg{})
+
+	// Visit 2: re-reveal the SAME list whose preview is already loaded. The
+	// first applyReveal must issue a preview reload command (it clears
+	// previewListID because the rows are stale-loaded: previewListID == target
+	// with previewLoading false); without the fix the command is nil and the
+	// reveal silently fails.
+	updated, cmd := m.Update(cmds.RevealArchivedTaskMsg{TaskID: targetTask, ListID: targetLis})
+	m = updated.(Model)
+	if cmd == nil {
+		t.Fatal("visit 2: re-reveal of an already-loaded list did not issue a preview reload command (the bug)")
+	}
+
+	// The lists refresh re-runs applyReveal; because the first load is still
+	// in flight for the same list, it must NOT kick a duplicate load — a
+	// second response would reset highlightedTaskID and wipe the mark the
+	// first applied (the double-load race).
+	updated, cmd = m.Update(cmds.RefreshArchivedListsMsg{Lists: apptypes.FromStoreLists(mustArchivedLists(t, s))})
+	m = updated.(Model)
+	if cmd != nil {
+		t.Fatal("visit 2: RefreshArchivedListsMsg stacked a duplicate preview load instead of dedupeing (the double-load race)")
+	}
+
+	// Deliver the single in-flight preview response; it must mark the task
+	// and clear revealTarget (a duplicate load would have wiped the mark on
+	// arrival).
+	m = step(t, m, cmds.RefreshArchivedListPreviewMsg{ListID: targetLis, Rows: rows})
+
+	if m.highlightedTaskID != targetTask {
+		t.Errorf("visit 2: highlightedTaskID = %q, want %q", m.highlightedTaskID, targetTask)
+	}
+	if m.revealTarget != nil {
+		t.Errorf("visit 2: revealTarget leaked: %+v", m.revealTarget)
+	}
+}
+
 // TestRevealSelectsListAndHighlightsTask proves the search result's "reveal"
 // half on the Archive page: RevealArchivedTaskMsg selects the archived list
 // the task came from (scrolling the list column to it when it sits below the

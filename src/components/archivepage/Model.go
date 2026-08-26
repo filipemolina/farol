@@ -265,9 +265,29 @@ func (m Model) applyReveal() (tea.Model, tea.Cmd) {
 			// Position the list column so the selected entry is visible even
 			// when it sits far below the fold.
 			m.listScroll = clampWindowStart(len(m.visibleEntries()), i, m.listViewportRows(), m.listScroll)
-			// Kick a preview load for the selected (revealed) list so the
-			// task can be found and marked.
-			return m, m.loadPreviewIfSelectionChanged()
+			// Force a preview reload when the rows are stale-loaded from a
+			// previous visit: previewListID == targetListID with previewLoading
+			// false, so loadPreviewIfSelectionChanged would otherwise see no
+			// change, skip the load, leave findAndHighlightRevealTask unrun, the
+			// task unmarked, and revealTarget leaking forever. Clearing the id
+			// makes the reload happen against fresh rows so the reveal can
+			// re-find and mark the task.
+			//
+			// But never stack a second load on one already in flight for the
+			// same list (previewListID == targetListID with previewLoading
+			// true): the real-app batch delivers RevealArchivedTaskMsg and then
+			// RefreshArchivedListsMsg, each calling applyReveal, and two loads
+			// would each reset highlightedTaskID on arrival — the last response
+			// would wipe the mark the first applied. The in-flight response
+			// already matches previewListID and finds revealTarget still set, so
+			// it marks the task itself; a duplicate load only risks unmarking it.
+			if m.previewListID != r.listID || !m.previewLoading {
+				m.previewListID = ""
+				// Kick a preview load for the selected (revealed) list so the
+				// task can be found and marked.
+				return m, m.loadPreviewIfSelectionChanged()
+			}
+			return m, nil
 		}
 	}
 	// Target list not found: fall back to the current selection (which
