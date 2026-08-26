@@ -218,6 +218,29 @@ func TestDigitThreeOnSearchPageIsInert(t *testing.T) {
 	}
 }
 
+// TestInputSizedFromBroadcast pins the width regression: the modal sized its
+// input at New from terminal dims it took once; the page is constructed once
+// with no dimensions at all, so the input must take its width from the layout
+// broadcast — a zero-width textinput renders a single rune of the
+// placeholder ("s").
+func TestInputSizedFromBroadcast(t *testing.T) {
+	s := testStore(t)
+
+	m := focusedPage(t, s) // applies a 100-col broadcast before anything renders
+	fresh := ansi.Strip(m.View().Content)
+	if !strings.Contains(fresh, "search all lists") {
+		t.Errorf("placeholder clipped — input has no width from the broadcast:\n%s", fresh)
+	}
+
+	// The echoed query gets the same width: what the user typed must come
+	// back in full, not one rune at a time.
+	m = typeQuery(t, m, "buy milk")
+	echoed := ansi.Strip(m.View().Content)
+	if !strings.Contains(echoed, "buy milk") {
+		t.Errorf("typed query not echoed in full:\n%s", echoed)
+	}
+}
+
 // TestCursorMovesAndIsVisible adapts the modal-era regression: up/down move
 // the cursor AND the movement must be visible — exactly one result row
 // carries the bold selected treatment, and pressing down moves that treatment

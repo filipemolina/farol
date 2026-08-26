@@ -19,15 +19,15 @@ import (
 
 // Page is the current top-level body surface. Exactly one page renders at a
 // time; adding a page is one new value, not one new boolean threaded through
-// every check (docs/DESIGN.md §5). The Search page replaced the old
-// archivePageVisible bool so the two full-body takeovers (Archive, Search)
-// are one closed set rather than a lattice of booleans.
-type Page int
+// every check (docs/DESIGN.md §5). The type lives in apptypes so display-
+// only components (mainmenu) can take it without importing model; these
+// aliases keep the vocabulary at the call sites.
+type Page = apptypes.Page
 
 const (
-	PageActive Page = iota
-	PageArchived
-	PageSearch
+	PageActive   = apptypes.PageActive
+	PageArchived = apptypes.PageArchived
+	PageSearch   = apptypes.PageSearch
 )
 
 // AppModel is the top-level Bubble Tea model: it owns the store handle, the

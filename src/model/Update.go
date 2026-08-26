@@ -548,6 +548,7 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		finalCmds = append(finalCmds,
 			cmds.SetFocus(constants.COMPONENT_SEARCH_PAGE),
 			m.footerContextCmd(),
+			cmds.SetPage(m.page),
 			cmds.RefreshSearch(),
 		)
 
@@ -617,6 +618,7 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		finalCmds = append(finalCmds,
 			cmds.SetFocus(constants.COMPONENT_ARCHIVE_PAGE),
 			m.footerContextCmd(),
+			cmds.SetPage(m.page),
 			cmds.RefreshArchivedLists(m.store),
 		)
 
@@ -634,6 +636,7 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		finalCmds = append(finalCmds,
 			cmds.SetFocus(constants.COMPONENT_ARCHIVE_PAGE),
 			m.footerContextCmd(),
+			cmds.SetPage(m.page),
 			cmds.RefreshArchivedLists(m.store),
 			cmds.RevealArchivedTask(msg.TaskID, msg.ListID),
 		)
@@ -647,6 +650,7 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		finalCmds = append(finalCmds,
 			cmds.SetFocus(constants.COMPONENT_TASK_TREE),
 			m.footerContextCmd(),
+			cmds.SetPage(m.page),
 		)
 		if msg.Follow != nil {
 			finalCmds = append(finalCmds, msg.Follow)
@@ -663,6 +667,7 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		finalCmds = append(finalCmds,
 			cmds.SetFocus(constants.COMPONENT_TASK_TREE),
 			m.footerContextCmd(),
+			cmds.SetPage(m.page),
 		)
 		if msg.Follow != nil {
 			finalCmds = append(finalCmds, msg.Follow)

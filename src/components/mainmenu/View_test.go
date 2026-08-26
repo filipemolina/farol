@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/x/ansi"
+	"github.com/filipemolina/farol/src/apptypes"
 	"github.com/filipemolina/farol/src/cmds"
 )
 
@@ -62,7 +63,7 @@ func TestHeaderHighlightsActiveTabByDefault(t *testing.T) {
 func TestHeaderHighlightsArchivedTabWhilePageIsOpen(t *testing.T) {
 	m := New()
 	updated, _ := m.(Model).Update(cmds.SetBodyLayoutMsg{TerminalWidth: 80})
-	updated, _ = updated.(Model).Update(cmds.OpenArchivePageMsg{})
+	updated, _ = updated.(Model).Update(cmds.SetPageMsg{Page: apptypes.PageArchived})
 
 	out := ansi.Strip(updated.(Model).View().Content)
 	if !strings.Contains(out, "▌ 2 Archived") {
@@ -79,7 +80,7 @@ func TestHeaderHighlightsArchivedTabWhilePageIsOpen(t *testing.T) {
 func TestHeaderHighlightsSearchTabWhilePageIsOpen(t *testing.T) {
 	m := New()
 	updated, _ := m.(Model).Update(cmds.SetBodyLayoutMsg{TerminalWidth: 80})
-	updated, _ = updated.(Model).Update(cmds.OpenSearchPageMsg{})
+	updated, _ = updated.(Model).Update(cmds.SetPageMsg{Page: apptypes.PageSearch})
 
 	out := ansi.Strip(updated.(Model).View().Content)
 	if !strings.Contains(out, "▌ 3 Search") {
@@ -87,6 +88,38 @@ func TestHeaderHighlightsSearchTabWhilePageIsOpen(t *testing.T) {
 	}
 	if strings.Contains(out, "▌ 1 Active") || strings.Contains(out, "▌ 2 Archived") {
 		t.Errorf("another tab is still highlighted while the Search page is open:\n%s", out)
+	}
+}
+
+// TestHeaderTabsStayMutuallyExclusive is the regression for the desynced
+// open/close flags: walking Archived -> Search -> Active must leave exactly
+// one tab highlighted at every step, always the page on screen. The old
+// two-bool tracking lit 2 and 3 together after 2 -> 3, then kept 2 lit on a
+// later return to Active.
+func TestHeaderTabsStayMutuallyExclusive(t *testing.T) {
+	m := New()
+	updated, _ := m.(Model).Update(cmds.SetBodyLayoutMsg{TerminalWidth: 80})
+
+	steps := []struct {
+		page    apptypes.Page
+		wantTab string
+		notTabs []string
+	}{
+		{apptypes.PageArchived, "▌ 2 Archived", []string{"▌ 1 Active", "▌ 3 Search"}},
+		{apptypes.PageSearch, "▌ 3 Search", []string{"▌ 1 Active", "▌ 2 Archived"}},
+		{apptypes.PageActive, "▌ 1 Active", []string{"▌ 2 Archived", "▌ 3 Search"}},
+	}
+	for _, s := range steps {
+		updated, _ = updated.(Model).Update(cmds.SetPageMsg{Page: s.page})
+		out := ansi.Strip(updated.(Model).View().Content)
+		if !strings.Contains(out, s.wantTab) {
+			t.Errorf("page %d: %q is not highlighted:\n%s", s.page, s.wantTab, out)
+		}
+		for _, banned := range s.notTabs {
+			if strings.Contains(out, banned) {
+				t.Errorf("page %d: stale highlight %q still showing:\n%s", s.page, banned, out)
+			}
+		}
 	}
 }
 
@@ -157,7 +190,7 @@ func TestHeaderBlanksViewModeWhilePageIsOpen(t *testing.T) {
 	m := New()
 	updated, _ := m.(Model).Update(cmds.SetBodyLayoutMsg{TerminalWidth: 80})
 	updated, _ = updated.(Model).Update(cmds.SetTaskTreeViewMsg{View: "pending"})
-	updated, _ = updated.(Model).Update(cmds.OpenArchivePageMsg{})
+	updated, _ = updated.(Model).Update(cmds.SetPageMsg{Page: apptypes.PageArchived})
 
 	out := updated.(Model).View().Content
 	if strings.Contains(out, "pending") {
@@ -171,8 +204,8 @@ func TestHeaderRestoresTreeViewAfterArchivePageCloses(t *testing.T) {
 	m := New()
 	updated, _ := m.(Model).Update(cmds.SetBodyLayoutMsg{TerminalWidth: 80})
 	updated, _ = updated.(Model).Update(cmds.SetTaskTreeViewMsg{View: "pending"})
-	updated, _ = updated.(Model).Update(cmds.OpenArchivePageMsg{})
-	updated, _ = updated.(Model).Update(cmds.CloseArchivePageMsg{})
+	updated, _ = updated.(Model).Update(cmds.SetPageMsg{Page: apptypes.PageArchived})
+	updated, _ = updated.(Model).Update(cmds.SetPageMsg{Page: apptypes.PageActive})
 
 	out := updated.(Model).View().Content
 	if !strings.Contains(out, "pending") {

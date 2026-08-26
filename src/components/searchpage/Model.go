@@ -18,6 +18,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/filipemolina/farol/src/appstyles"
 	"github.com/filipemolina/farol/src/cmds"
+	"github.com/filipemolina/farol/src/components/chrome"
 	"github.com/filipemolina/farol/src/constants"
 	"github.com/filipemolina/farol/src/keys"
 	"github.com/filipemolina/farol/src/store"
@@ -87,6 +88,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case cmds.SetBodyLayoutMsg:
 		m.body = msg
+		// Size the input from the broadcast: the page is constructed once
+		// with no dimensions, and a zero-width textinput renders a single
+		// rune of the placeholder ("s"). The modal sized its input at New
+		// from terminal dims the page no longer receives; the input takes
+		// the same body width the result rows render at.
+		m.input.SetWidth(max(0, chrome.PanelBodyWidth(msg.TerminalWidth)))
 		return m, nil
 
 	case cmds.SetFocusMsg:
