@@ -255,6 +255,27 @@ func TestWCAGContrastAgainstSurfaces(t *testing.T) {
 					t.Errorf("spinner %s: ratio = %.2f, want ≥ %.1f", sc.label, ratio, sc.floor)
 				}
 			}
+
+			// The search result's "›" separator, the chrome between a
+			// result's list name and its title. It draws TextDim on whichever
+			// row background it lands on - ModalBg on the selected row,
+			// BackgroundElevated otherwise (chrome.ListRowBg) - so both
+			// surfaces carry the same small-glyph floor the spinner uses.
+			// Without these the separator could dim into its own row unnoticed,
+			// which is exactly how it went missing when it was left unstyled.
+			sepCases := []struct {
+				label   string
+				surface color.Color
+			}{
+				{"TextDim on modal (selected result)", modal},
+				{"TextDim on elevated (unselected result)", elevated},
+			}
+			for _, sc := range sepCases {
+				ratio := Contrast(theme.TextDim, sc.surface)
+				if ratio < 2.2 {
+					t.Errorf("search separator %s: ratio = %.2f, want ≥ 2.2", sc.label, ratio)
+				}
+			}
 		})
 	}
 }

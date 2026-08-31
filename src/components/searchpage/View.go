@@ -148,22 +148,36 @@ func renderResult(r Result, selected, focused bool, width int, query string) str
 // label rather than the list receding from its task. The title carries the
 // match highlight (Accent on the matched subsequence) computed by matchSpans.
 // An unresolvable list name (deleted between search and render) falls back to
-// the bare title, treated as active.
+// the bare title, treated as active. Every fragment the row emits — name,
+// separator, title — sets the row background explicitly, so the band stays
+// unbroken across the whole label.
 func (r Result) renderLabel(titleStyle lipgloss.Style, rowBg color.Color, query string) string {
 	titleRendered := renderTitleWithSpans(r.Title, matchSpans(query, r.Title), titleStyle)
 	if r.ListName == "" {
 		return titleRendered
 	}
 
+	// The "›" is chrome between the label's two halves rather than part of
+	// either, so it carries the row background explicitly and draws in TextDim
+	// on every row. Left bare it inherited the terminal's own default colors
+	// instead of the theme's, punching a default-background gap through the
+	// selected row's full-width band and vanishing outright wherever those
+	// defaults happened to land on the row beneath it. TextDim clears the 2.2
+	// glyph floor on both row surfaces in every theme (Contrast_test.go).
+	sep := lipgloss.NewStyle().
+		Foreground(appstyles.Active.TextDim).
+		Background(rowBg).
+		Render(" › ")
+
 	if r.Archived {
 		name := lipgloss.NewStyle().
 			Foreground(appstyles.Active.TextDim).
 			Background(rowBg).
 			Render(r.ListName + "*")
-		return name + " › " + titleRendered
+		return name + sep + titleRendered
 	}
 	// Active list name styled exactly like the task title (the cursor row's
 	// bold carries through titleStyle, so it stays bold when selected).
 	name := titleStyle.Render(r.ListName)
-	return name + " › " + titleRendered
+	return name + sep + titleRendered
 }
