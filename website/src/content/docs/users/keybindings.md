@@ -7,7 +7,7 @@ sidebar:
 
 Every key in farol is declared exactly once, in `src/keys/Keys.go`. The footer bar and the `?` help overlay render from that same declaration, so what they advertise is what the handlers do — they cannot drift apart.
 
-`?` lists every key in the app on every screen, with the ones that do nothing right now dimmed. The tables below are the full reference, in the same scope order the overlay uses — plus a Search page scope, which the overlay does not carry yet.
+`?` lists every key in the app on every screen, with the ones that do nothing right now dimmed. The tables below are the full reference, in the same scope order the overlay uses.
 
 ## Global
 
@@ -81,7 +81,7 @@ Act while a `/` filter is open or applied.
 | `enter` | Apply the query and leave the filtered view active. |
 | `esc` | Clear the filter. |
 
-`/` filters the focused panel — it never leaves the current list. Searching across every list is the Search page (`3`), a separate surface with its own scope below.
+`/` filters the focused panel and never leaves the current list. Searching across every list is the Search page (`3`, or `F`) — its own scope below.
 
 ## Lists
 
@@ -154,13 +154,17 @@ Act inside the Search page, which owns the keyboard while open the same way the 
 
 | Key | Action |
 | --- | --- |
+| `3` | Open the page from anywhere; pressed here it is an idempotent no-op. |
+| `F` | Alias for `3` from elsewhere — but a query character while the page is open, so `?` dims it here. |
+| `1` | Leave for Active. |
+| `2` | Leave for the Archived Lists page. |
 | `↑` `↓` | Move the result cursor. Arrows only — `j`/`k` stay query characters. |
 | `enter` | Open the highlighted result: jump to the task, or reveal it on the Archived Lists page when its list is archived. |
 | `esc` | Leave the page and return to Active. |
 
 `3` opens the page from anywhere and `F` is an alias for it; the digits stay live while it is open, so `1` and `2` leave for Active and Archived without a trip through `esc`. The query, its results, and the cursor survive leaving and coming back.
 
-The `?` overlay does not yet carry a scope of its own for this page — the page's own footer advertises the three keys above, live, while it is open.
+`F` is the one key that changes meaning at the threshold: it opens the page from elsewhere, but inside it the alias falls through to the query input as a printable character, so a title like `Farol v0.4` stays searchable. The `?` overlay shows it dimmed here for exactly that reason. The page's footer advertises only the three keys above — it is the surface with the least room and they are what it has room for — so `?` is where the digits get advertised.
 
 ## Overlays
 

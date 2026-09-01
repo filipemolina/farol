@@ -218,6 +218,12 @@ post-alpha backlog.
   at wall-clock time, and both the Archive page and the Details modal print
   that date, so recording the light and dark halves on different days dates the
   two versions of the same page a day apart.
+- Re-recording is not byte-stable everywhere, so "nothing else changed" is
+  only a check on some of the set. Most surfaces reproduce exactly, which
+  makes an unexpected diff worth reading. The Details shots are the exception:
+  the modal prints the task's ULID, and `seed.sh` mints fresh ids every run,
+  so `screenshot-details-*.png` differ on every single re-record whether or
+  not anything about the app changed.
 - Tapes stay short on purpose. Appending scenes to a long tape makes VHS
   silently drop one of the earliest `Screenshot` commands — no error, the file
   simply is not written — which is why the hero, split, tree, and agent shots

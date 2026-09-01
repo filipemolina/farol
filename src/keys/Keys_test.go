@@ -443,9 +443,9 @@ func TestActiveReturnsSearchPageBindingsWhenVisible(t *testing.T) {
 	}
 }
 
-// The Search page owns the keyboard while open: past its own trio only the
-// emergency ForceQuit is pressable — no quit, no theme, no panel toggle
-// (docs/DESIGN.md §5; the digits are matched inside the page's own handler).
+// The Search page owns the keyboard while open: past its own trio and the
+// three digit tabs, only the emergency ForceQuit is pressable — no quit, no
+// theme, no panel toggle (docs/DESIGN.md §5).
 func TestPressableNowSearchPageOmitsGlobals(t *testing.T) {
 	ctx := Context{
 		Focused:           constants.COMPONENT_SEARCH_PAGE,
@@ -460,5 +460,72 @@ func TestPressableNowSearchPageOmitsGlobals(t *testing.T) {
 		if containsBinding(pressable, banned) {
 			t.Errorf("Search page context wrongly leaves %q pressable", banned.Help().Key)
 		}
+	}
+}
+
+// TestPressableNowSearchPageKeepsDigitsPressable pins the one place where the
+// footer and the help overlay are deliberately allowed to disagree. The page's
+// footer advertises three keys (navigate/open/back) because that is what it has
+// room for, but searchpage.Model matches 1, 2 and 3 ahead of the query input,
+// so all three really are pressable and the overlay must not dim them.
+//
+// F is the exception that proves it: the alias opens the page from elsewhere,
+// but while the page is open it falls through to the input as a printable
+// character (so "Farol v0.4" stays searchable), and a dimmed F is how the
+// overlay says so.
+func TestPressableNowSearchPageKeepsDigitsPressable(t *testing.T) {
+	ctx := Context{
+		Focused:           constants.COMPONENT_SEARCH_PAGE,
+		SearchPageVisible: true,
+	}
+	pressable := pressableNow(ctx)
+
+	for _, b := range []key.Binding{Global.PageActive, Global.PageArchived, Global.PageSearch} {
+		if !containsBinding(pressable, b) {
+			t.Errorf("%q must stay pressable on the Search page — its own handler matches it ahead of the query input", b.Help().Key)
+		}
+	}
+	if containsBinding(pressable, Global.Picker) {
+		t.Error("F must NOT be pressable while the Search page is open: it is a query character there, not the alias")
+	}
+	// The footer's own set stays the trio: this separation is the point.
+	if len(Active(ctx)) != 3 {
+		t.Errorf("Active for the Search page = %v, want only the footer's navigate/open/back trio", Active(ctx))
+	}
+}
+
+// TestCatalogHasSearchPageScope proves ? documents the Search page. The page
+// is a full-screen surface with bindings of its own, exactly like the Archived
+// Lists page, and for a while the overlay carried a scope for that page and
+// none for this one — so the page's three keys appeared nowhere in the catalog
+// that calls itself every key in the app.
+func TestCatalogHasSearchPageScope(t *testing.T) {
+	var scope *Scope
+	for i, sc := range Catalog(Context{}) {
+		if sc.Title == "Search page" {
+			scope = &Catalog(Context{})[i]
+			break
+		}
+	}
+	if scope == nil {
+		t.Fatal("Catalog has no \"Search page\" scope")
+	}
+	for _, b := range []key.Binding{
+		SearchPage.Navigate, SearchPage.Submit, SearchPage.Cancel,
+		Global.PageSearch, Global.Picker,
+	} {
+		found := false
+		for _, e := range scope.Entries {
+			if sameBinding(e.Binding, b) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("Search page scope is missing %q", b.Help().Key)
+		}
+	}
+	if scope.Note == "" {
+		t.Error("Search page scope needs its Note: F-is-a-query-character and arrows-only are exactly what a key/description pair cannot carry")
 	}
 }

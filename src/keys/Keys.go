@@ -733,7 +733,7 @@ func Catalog(ctx Context) []Scope {
 		{
 			Title:   "Filtering",
 			Entries: entries(Global.Filter, Overlay.Submit, Overlay.Cancel),
-			Note:    "/ filters the focused panel; F searches across every list.",
+			Note:    "/ filters the focused panel and never leaves the current list. Searching across every list is the Search page (3, or F) — its own scope below.",
 		},
 		{
 			Title:   "Lists",
@@ -748,6 +748,11 @@ func Catalog(ctx Context) []Scope {
 			Title:   "Archived Lists",
 			Entries: entries(Global.PageActive, Global.PageArchived, ArchivePage.Navigate, ArchivePage.GoToStart, ArchivePage.GoToEnd, ArchivePage.FocusPreview, ArchivePage.Filter, ArchivePage.Unarchive, ArchivePage.Delete),
 			Note:    "esc leaves the page last: it commits an open filter first, clears an applied one on the next press, and only then leaves. ↑/↓ and home/end/g/G scroll whichever column currently has focus.",
+		},
+		{
+			Title:   "Search page",
+			Entries: entries(Global.PageSearch, Global.Picker, Global.PageActive, Global.PageArchived, SearchPage.Navigate, SearchPage.Submit, SearchPage.Cancel),
+			Note:    "F opens the page but is a query character while it is open — inside the page only the digits switch tabs. j/k are query characters too: the results move with the arrow keys only.",
 		},
 		{
 			Title:   "Overlays",
@@ -765,8 +770,25 @@ func pressableNow(ctx Context) []key.Binding {
 	// bindings (Active returns them plus Esc) and the emergency ForceQuit
 	// are live — no globals. The Search page is the same, except its footer
 	// stays live (it advertises its own bindings) rather than blanking.
-	if ctx.DetailsPanelVisible || ctx.ArchivePageVisible || ctx.SearchPageVisible {
+	if ctx.DetailsPanelVisible || ctx.ArchivePageVisible {
 		return append(Active(ctx), Global.ForceQuit)
+	}
+
+	// The Search page is the one surface where "what the footer advertises"
+	// and "what the user can press" are deliberately different sets. Active
+	// returns the three the footer shows — navigate, open, back — because the
+	// page's footer stays live and those are what it has room to say. But the
+	// page's own handler also matches 1, 2 and 3 ahead of the query input
+	// (searchpage.Model, docs/DESIGN.md §5), so all three are pressable and
+	// the overlay must not dim them. F is NOT among them: while the page is
+	// open the alias falls through to the input as a printable character, so
+	// titles like "Farol v0.4" stay searchable, and the overlay dims it to
+	// say exactly that.
+	if ctx.SearchPageVisible {
+		return append(Active(ctx),
+			Global.PageActive, Global.PageArchived, Global.PageSearch,
+			Global.ForceQuit,
+		)
 	}
 
 	live := append(Active(ctx), GlobalsFor(ctx)...)
