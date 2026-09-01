@@ -7,7 +7,7 @@ sidebar:
 
 Every key in farol is declared exactly once, in `src/keys/Keys.go`. The footer bar and the `?` help overlay render from that same declaration, so what they advertise is what the handlers do — they cannot drift apart.
 
-`?` lists every key in the app on every screen, with the ones that do nothing right now dimmed. The tables below are the full reference, in the same scope order the overlay uses.
+`?` lists every key in the app on every screen, with the ones that do nothing right now dimmed. The tables below are the full reference, in the same scope order the overlay uses — plus a Search page scope, which the overlay does not carry yet.
 
 ## Global
 
@@ -81,7 +81,7 @@ Act while a `/` filter is open or applied.
 | `enter` | Apply the query and leave the filtered view active. |
 | `esc` | Clear the filter. |
 
-`/` filters the focused panel; `F` searches across every list.
+`/` filters the focused panel — it never leaves the current list. Searching across every list is the Search page (`3`), a separate surface with its own scope below.
 
 ## Lists
 
@@ -147,6 +147,20 @@ Act inside the Archived Lists page, which owns the keyboard while open — it is
 | `1` | Leave the page for Active — a second way off it, alongside `esc`. |
 
 `2` opens the page from anywhere; `1` leaves it from anywhere. Lists get archived with `A` in the Lists panel; the page is for browsing, restoring, and permanently deleting what's already archived.
+
+## Search page
+
+Act inside the Search page, which owns the keyboard while open the same way the Archived Lists page does. The query input holds every printable character, so this scope is deliberately small: `j`/`k` type letters here, they never move the cursor.
+
+| Key | Action |
+| --- | --- |
+| `↑` `↓` | Move the result cursor. Arrows only — `j`/`k` stay query characters. |
+| `enter` | Open the highlighted result: jump to the task, or reveal it on the Archived Lists page when its list is archived. |
+| `esc` | Leave the page and return to Active. |
+
+`3` opens the page from anywhere and `F` is an alias for it; the digits stay live while it is open, so `1` and `2` leave for Active and Archived without a trip through `esc`. The query, its results, and the cursor survive leaving and coming back.
+
+The `?` overlay does not yet carry a scope of its own for this page — the page's own footer advertises the three keys above, live, while it is open.
 
 ## Overlays
 

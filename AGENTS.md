@@ -72,7 +72,7 @@ rules rather than left implicit:
 - **Do not add a dependency not named in `docs/DESIGN.md`.**
   The stack is Bubble Tea v2 / Lip Gloss v2 / Bubbles v2, Cobra,
   `modernc.org/sqlite`, `gopkg.in/yaml.v3` (the config file),
-  `github.com/sahilm/fuzzy` (the `/` filter and the search picker), and
+  `github.com/sahilm/fuzzy` (the `/` filter and the Search page), and
   `github.com/charmbracelet/x/ansi` (ANSI-aware width measurement and
   truncation). If a task seems to need something else (a different
   fuzzy-match package, a TUI table widget), that is a signal to re-read

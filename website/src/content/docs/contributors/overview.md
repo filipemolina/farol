@@ -21,7 +21,7 @@ Farol is deliberately small. The entire dependency list, from `go.mod`:
 | `github.com/spf13/cobra` | v1.10.2 | The CLI: every subcommand, `--help`, flag parsing |
 | `modernc.org/sqlite` | v1.55.0 | The database driver — pure Go, no CGO |
 | `gopkg.in/yaml.v3` | v3.0.1 | The config file (`~/.config/farol/config.yaml`) |
-| `github.com/sahilm/fuzzy` | v0.1.3 | The `/` filter and the cross-list search picker |
+| `github.com/sahilm/fuzzy` | v0.1.3 | The `/` filter and the cross-list Search page |
 | `github.com/charmbracelet/x/ansi` | v0.11.7 | ANSI-aware width measurement and truncation |
 
 Two things to know before touching the TUI half:

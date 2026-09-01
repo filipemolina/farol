@@ -5,7 +5,7 @@
 #
 # Record from the repo root:
 #
-#   FAROL_DEMO_VERSION=v0.3.0 ./demo/seed.sh
+#   FAROL_DEMO_VERSION=v0.4.3 ./demo/seed.sh
 #   vhs demo/landing-split.tape           # -> demo/landing-split.png
 #
 # The agentshot script clears the screen first, prints real command output,

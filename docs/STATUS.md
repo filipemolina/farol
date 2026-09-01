@@ -182,12 +182,47 @@ post-alpha backlog.
   create UX). The `.tape` scripts use the current `[`/`]` create-level
   bindings; tab/shift+tab panel focus works everywhere except while the
   inline create input is live (focus is locked to the input then).
-- Regenerate with:
+- The README set is only part of the media. `demo/` also carries the docs
+  site's dark and light screenshot sets, four single-shot website tapes, and
+  the landing page's stills and video — fourteen `.tape` files in all. Each
+  one's header states its own prerequisites, and they differ: some need a live
+  presence claim taken seconds before `vhs` runs, one drives two processes in
+  one frame, and two record at their own geometry. Read the header of the tape
+  you are regenerating; this list is not a substitute for it.
+- Re-seed before every tape. `demo/seed.sh` rebuilds the binary and resets the
+  store, and the tapes write to the store they record, so a tape run against
+  another tape's leftovers photographs the wrong data. Pass
+  `FAROL_DEMO_VERSION` to stamp the release into the header bar — without it
+  `seed.sh` falls back to `git describe`, which appends `-dirty` the moment the
+  tree has uncommitted changes and bakes that into the shot.
+- The README set:
   ```
-  ./demo/seed.sh
-  vhs demo/screenshots.tape
+  FAROL_DEMO_VERSION=v0.4.3 ./demo/seed.sh
   vhs demo/demo.tape
+  ./demo/compress.sh
+  FAROL_DEMO_VERSION=v0.4.3 ./demo/seed.sh
+  vhs demo/screenshots.tape
   ```
+  which is what `make demo` runs.
+- The docs site's two theme sets, re-seeding between them —
+  `website-screenshots.tape` writes the `-dark` set, and
+  `website-screenshots-day.tape` switches the config to `farol-day` before
+  launching and writes the `-day` set:
+  ```
+  FAROL_DEMO_VERSION=v0.4.3 ./demo/seed.sh
+  vhs demo/website-screenshots.tape
+  FAROL_DEMO_VERSION=v0.4.3 ./demo/seed.sh
+  vhs demo/website-screenshots-day.tape
+  ```
+- Keep the theme sets in one sitting. `seed.sh` archives the demo's third list
+  at wall-clock time, and both the Archive page and the Details modal print
+  that date, so recording the light and dark halves on different days dates the
+  two versions of the same page a day apart.
+- Tapes stay short on purpose. Appending scenes to a long tape makes VHS
+  silently drop one of the earliest `Screenshot` commands — no error, the file
+  simply is not written — which is why the hero, split, tree, and agent shots
+  each have their own single-shot tape instead of living in
+  `website-screenshots.tape`.
 
 ## External plan file
 

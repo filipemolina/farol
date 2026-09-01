@@ -46,7 +46,7 @@ There has to be a better way to do this (I'm absolutely certain there is). Well,
 | Feature | Description |
 |---------|-------------|
 | **Two-pane layout** | Tasks on the left, lists on the right (toggles with `L`) |
-| **Vim + arrow keys** | navigate, `space` toggle, `/` fuzzy search, `F` global search |
+| **Vim + arrow keys** | navigate, `space` toggle, `/` filters the current list, `3` opens the cross-list Search page |
 | **Nested tasks** | `]` to add a child, `[` to add a sibling of parent |
 | **Status model** | `pending`, `in_progress`, `complete` with user % or derived % |
 | **Live agent presence** | Animated spinner lights on task writes. You see exactly what's working. |
@@ -65,7 +65,7 @@ There has to be a better way to do this (I'm absolutely certain there is). Well,
 | Main view | Add task | Search |
 |-----------|----------|--------|
 |![Main view](demo/screenshot-main.png)|![Add task](demo/screenshot-add.png)|![Search](demo/screenshot-search.png)|
-|Tasks (left) + lists (right)|Inline add with level indicator|Global search|
+|Tasks (left) + lists (right)|Inline add with level indicator|The Search page (`3`)|
 
 | Theme picker | Help | Complete section |
 |--------------|------|------------------|
@@ -125,7 +125,7 @@ The default list `Inbox` is created automatically; the app opens on the
 | `tab` / `shift+tab` | Cycle panels (tasks and lists). Locked while typing a new task: focus stays on the text input |
 | `space` | Toggle task complete (cascades to descendants) |
 | `enter` | Show task details |
-| `esc` | Close details, picker, or cancel |
+| `esc` | Close details, leave a page, or cancel |
 | `n` | Start adding a new task (inline) |
 | `d` | Delete the selected task |
 | `]` | Indent the selected task (re-parent under previous sibling) |
@@ -139,13 +139,14 @@ The default list `Inbox` is created automatically; the app opens on the
 | `s` | Sort the current list |
 | `v` | Cycle the task tree's view: both sections, Pending only, Complete only |
 | `/` | Filter current list (fuzzy search) |
-| `F` | Global search across all lists |
+| `F` | Open the Search page — an alias for `3` |
 | `e` | Export the store or highlighted list to JSON |
 | `i` | Import lists from a JSON file |
 | `T` | Toggle theme picker |
 | `L` | Toggle lists panel visibility |
 | `1` | Switch to the Active page (tasks and lists) |
 | `2` | Switch to the Archived Lists page (`u` unarchives, `d` permanently deletes, `esc` or `1` to leave) |
+| `3` | Switch to the Search page — searches every list at once, archived ones included (`F` is an alias) |
 | `a` | Open the About modal |
 | `?` | Show help overlay |
 | `q` / `Ctrl+C` | Quit |
@@ -319,7 +320,7 @@ loop alone, without the full command reference.
 ## Project status
 
 Alpha shipped. Phases 0–9 of [`docs/ROADMAP.md`](docs/ROADMAP.md) are
-complete (tagged `v0.1.0`). Post-alpha work is at `v0.4.1`.
+complete (tagged `v0.1.0`). Post-alpha work is at `v0.4.3`.
 
 See [`docs/STATUS.md`](docs/STATUS.md) for what each phase changed and why.
 
