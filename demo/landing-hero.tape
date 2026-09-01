@@ -9,7 +9,7 @@
 #
 # Record from the repo root:
 #
-#   FAROL_DEMO_VERSION=v0.4.3 ./demo/seed.sh   # MANDATORY - see landing.tape
+#   FAROL_DEMO_VERSION=v0.4.4 ./demo/seed.sh   # MANDATORY - see landing.tape
 #   vhs demo/landing-hero.tape                 # -> demo/landing-hero.png
 #
 # Pass FAROL_DEMO_VERSION explicitly. seed.sh otherwise bakes in `git describe`,
