@@ -44,8 +44,16 @@ Set TypingSpeed 150ms
 # /tmp/farol-demo/farol itself, so this is self-contained from a clean
 # checkout. Hide every frame of setup — the GIF starts at the TUI on the
 # seeded "Home" list.
+#
+# FAROL_DEMO_VERSION is read back from the file the OUTER seed.sh wrote rather
+# than inherited: this shell is spawned by vhs and does not carry the
+# environment vhs itself was launched with. Without that read the inner seed
+# falls back to `git describe --dirty` and bakes the working tree's state into
+# the header bar of every frame - which is how this GIF shipped stamped
+# "v0.4.2-15-ge1f997f-dirty" while every still beside it read a clean version.
+# An unseeded run finds no file and behaves exactly as it did before.
 Hide
-Type@1ms "cd /home/filipe/Documents/projects/farol && ./demo/seed.sh && clear"
+Type@1ms "cd /home/filipe/Documents/projects/farol && FAROL_DEMO_VERSION=$(cat /tmp/farol-demo/version 2>/dev/null) ./demo/seed.sh && clear"
 Enter
 Sleep 3s
 # Export the same throwaway XDG dirs inside the visible shell so the TUI reads

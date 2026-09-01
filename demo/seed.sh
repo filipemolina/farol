@@ -30,6 +30,17 @@ LDFLAGS="-X github.com/filipemolina/farol/src/constants.version=$VERSION"
 mkdir -p "$(dirname "$BIN")"
 go build -ldflags "$LDFLAGS" -o "$BIN" .
 
+# Persist the version next to the binary. demo/demo.tape re-runs this script
+# from inside the VHS shell, and that shell does not inherit the environment
+# vhs was launched from -- so FAROL_DEMO_VERSION does not reach it and the
+# inner run fell back to `git describe --dirty`, stamping the recording with
+# whatever the working tree happened to be. That is how demo.gif shipped
+# reading "v0.4.2-15-ge1f997f-dirty" while every still beside it read a clean
+# version. The tape reads this file back, so the stamp survives the shell
+# boundary; a bare `vhs demo/demo.tape` with nothing seeded finds no file,
+# falls through to git describe, and behaves exactly as before.
+printf '%s' "$VERSION" > "$(dirname "$BIN")/version"
+
 # Pin farol-dark. This is a deliberate branding choice, not a claim about what
 # a fresh install shows -- appstyles.DefaultTheme is farol-dusk. farol-dark is
 # the brand navy/amber palette, and the landing page is built from it directly:
