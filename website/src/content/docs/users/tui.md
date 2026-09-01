@@ -43,7 +43,7 @@ While the input is open, `[` and `]` change **where** the new task lands, relati
 
 Further presses in the same direction do not go further — the range is clamped to exactly one level either side of the selection. `[` is a no-op on a root-level task, because there is no level above root.
 
-![The inline create row, adding a task at the selected level](/screenshot-add.png)
+![The inline create row, adding a task at the selected level](/screenshot-add-dark.png)
 
 After a successful add, selection moves to the new task and the level resets to the default. Selecting a different task while the input has unsent text also resets the level — the indicator always describes a relationship to the *current* selection.
 
