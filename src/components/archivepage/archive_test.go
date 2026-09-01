@@ -3,6 +3,7 @@ package archivepage
 import (
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -112,13 +113,47 @@ func manyArchivedListsModel(t *testing.T, n int) (Model, *store.Store) {
 	return m, s
 }
 
+// mustArchivedLists returns the store's archived lists in a deterministic
+// order, which is NOT the order the page shows in production.
+//
+// ListArchivedLists sorts by `archived_at DESC, id`, and archived_at is
+// store.ArchiveList's now.Unix() — one-second granularity. A test that
+// archives n lists in a loop therefore gets an order that depends on where
+// the wall clock happened to tick: every list inside one second sorts by id
+// ascending (creation order), but a loop that straddles a boundary puts its
+// tail group FIRST, moving every list's index by an amount nothing in the
+// test controls. That is a real flake, not a hypothetical — it went unseen
+// locally for as long as the loop fit inside a second and failed the first
+// time CI ran the suite on a slower runner under -race
+// (TestRevealSelectsListAndHighlightsTask, which needs its target list below
+// the fold).
+//
+// Sorting by id here pins creation order, which is what the sub-second case
+// already produced and what every caller means by "the lists I just made".
+// The page itself does not sort — it renders the slice it is handed — so
+// choosing the order here tests exactly what the component does with it. A
+// test that wants to assert the production newest-first order should call
+// ListArchivedLists directly and stamp archived_at itself.
 func mustArchivedLists(t *testing.T, s *store.Store) []store.ListSummary {
 	t.Helper()
 	ls, err := s.ListArchivedLists("")
 	if err != nil {
 		t.Fatalf("list archived lists: %v", err)
 	}
+	slices.SortFunc(ls, func(a, b store.ListSummary) int {
+		return strings.Compare(a.ID, b.ID)
+	})
 	return ls
+}
+
+// indexOfList reports where a list sits in the page's entry slice, or -1.
+func indexOfList(m Model, listID string) int {
+	for i, e := range m.entries {
+		if e.List.ID == listID {
+			return i
+		}
+	}
+	return -1
 }
 
 func TestLoadingStateShowsBeforeFirstRefresh(t *testing.T) {
@@ -737,6 +772,14 @@ func TestRevealSelectsListAndHighlightsTask(t *testing.T) {
 	}
 	if m.previewListID != targetLis {
 		t.Errorf("after reveal, previewListID = %q, want %q (must load the revealed list's preview)", m.previewListID, targetLis)
+	}
+	// Pin the premise the scroll assertion rests on: "target" is created last,
+	// so mustArchivedLists' id ordering puts it at the end of 21 entries, well
+	// past a 30-row body's list column. Without this, a change to that
+	// ordering would move the target above the fold and the scroll assertion
+	// below would fail with nothing pointing at the cause.
+	if got, want := indexOfList(m, targetLis), len(m.entries)-1; got != want {
+		t.Fatalf("target list at entry index %d, want %d (last of %d) — the fold premise no longer holds", got, want, len(m.entries))
 	}
 	if m.listScroll <= 0 {
 		t.Error("revealing a list below the fold should have scrolled the list column to it")
