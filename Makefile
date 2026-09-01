@@ -32,6 +32,12 @@ test:
 # Set FAROL_DEMO_VERSION to stamp a specific version into the recorded
 # binary; seed.sh otherwise derives it from git describe, which appends
 # -dirty whenever the working tree has uncommitted changes.
+#
+# THIS IS THE README SET ONLY. It does not touch the docs site's two theme
+# sets, the four single-shot website tapes, or the landing page's stills and
+# video -- fourteen tapes in total. Cutting a release means re-recording all
+# of them at the version about to be tagged; `make demo` alone leaves the
+# other surfaces on the previous release. See AGENTS.md, "Cutting a release".
 demo:
 	./demo/seed.sh /tmp/farol-demo/farol
 	vhs demo/demo.tape

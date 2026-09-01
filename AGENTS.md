@@ -300,6 +300,139 @@ CI runs exactly these on every pull request, `go test -race` included:
 own goroutine, both worth checking under the race detector. Keep every commit
 green, not just the branch tip.
 
+## Cutting a release
+
+**The version in a screenshot is content, not decoration.** It is in the
+header bar of every frame of every recording. A release whose media says
+`v0.4.2-15-ge1f997f-dirty`, or three versions at once, is a release with wrong
+screenshots — and re-recording after the tag means a second push and a window
+where the README contradicts the download.
+
+So: **re-record every recording at the version about to be tagged, and put the
+media, the version bumps and the tag in one push.** Not after. The order below
+is the whole job.
+
+### 1. Re-record everything, stamped with the version you are about to tag
+
+```bash
+V=v0.4.5    # the tag you are about to push, not the last one
+
+# README: demo.gif + the 7 stills. This is what `make demo` runs.
+FAROL_DEMO_VERSION=$V ./demo/seed.sh /tmp/farol-demo/farol
+vhs demo/demo.tape && ./demo/compress.sh
+FAROL_DEMO_VERSION=$V ./demo/seed.sh /tmp/farol-demo/farol
+vhs demo/screenshots.tape
+
+# Docs site, both themes. Do these two back to back — see "one sitting" below.
+FAROL_DEMO_VERSION=$V ./demo/seed.sh /tmp/farol-demo/farol
+vhs demo/website-screenshots.tape
+FAROL_DEMO_VERSION=$V ./demo/seed.sh /tmp/farol-demo/farol
+vhs demo/website-screenshots-day.tape
+
+# Docs site, the single-shot tapes.
+for t in tree split; do
+  FAROL_DEMO_VERSION=$V ./demo/seed.sh /tmp/farol-demo/farol
+  vhs demo/website-screenshots-$t.tape
+done
+
+# The two that need a live agent claim. WorkTTL is 120s, so claim
+# immediately before vhs, never minutes ahead.
+export XDG_DATA_HOME=/tmp/farol-demo/data XDG_CONFIG_HOME=/tmp/farol-demo/config
+for t in hero agent; do
+  FAROL_DEMO_VERSION=$V ./demo/seed.sh /tmp/farol-demo/farol
+  task=$(/tmp/farol-demo/farol search 'Rewrite the ingest worker' | awk 'NR>1{print $1; exit}')
+  FAROL_AGENT=claude /tmp/farol-demo/farol claim "$task" --kind working
+  vhs demo/website-screenshots-$t.tape
+done
+
+# Landing page: three stills, the hero, the two-process split, the video.
+for t in landing landing-hero landing-split landing-demo; do
+  FAROL_DEMO_VERSION=$V ./demo/seed.sh /tmp/farol-demo/farol
+  vhs demo/$t.tape
+done
+
+# Landing encodes. cwebp is NOT installed; ffmpeg's libwebp is the way.
+ffmpeg -y -i demo/landing-demo.mp4 -vf "fps=12,scale=1152:-2:flags=lanczos" \
+  -c:v libx264 -crf 33 -preset slow -tune stillimage -pix_fmt yuv420p -an \
+  -movflags +faststart demo/landing-demo-web.mp4
+ffmpeg -y -i demo/landing-demo.mp4 -vf "select=eq(n\,0)" -frames:v 1 \
+  -c:v libwebp -quality 82 demo/landing-demo-poster.webp
+for f in agent hero search tree split; do
+  ffmpeg -y -i demo/landing-$f.png -c:v libwebp -quality 82 demo/landing-$f.webp
+done
+```
+
+### 2. Verify the stamp on every file. Do not assume.
+
+Every trap below has already shipped wrong assets at least once, so read the
+header bar of every file rather than trusting that the commands ran:
+
+```bash
+for f in demo/*.png demo/*.webp website/public/*.png; do
+  W=$(identify -format '%w' "$f"); H=$(identify -format '%h' "$f")
+  convert "$f" -crop $((W*55/100))x$((H*12/100))+$((W*40/100))+0 +repage -resize 520x \
+    -background '#111' -fill '#8cf' -pointsize 12 label:"$f" \
+    -gravity center -append "/tmp/vcheck-$(basename "$f")"
+done
+montage /tmp/vcheck-*.png -tile 2x -geometry +2+2 /tmp/versions.png   # then look at it
+```
+
+`demo.gif` and the two mp4s need a frame pulled first — `ffmpeg -i <file> -vf
+"select=eq(n\,120)" -frames:v 1 frame.png` — because ImageMagick has to
+coalesce a 450-frame GIF to crop it, which is slow enough to look hung.
+
+Read every one. `v0.4.5` on all of them, no `-dirty`, no bare commit hash, no
+older version.
+
+### 3. Bump what states a version in prose
+
+- `README.md`: the status badge, and the "Post-alpha work is at ..." line
+- `../landingPages/farol` (repo `filipemolina/farol-landing`):
+  `Footer.astro`, the commented-out badge in `Hero.astro`, `softwareVersion`
+  in `Layout.astro`, and `curlVersion` in `Installation.astro` — that last one
+  is a real download URL, so it must not be pushed before the release exists
+- `demo/landing-hero.tape` and `demo/landing-split.tape` pin a version in
+  their own seed instructions
+
+### 4. Commit, tag, push, publish
+
+One commit for the media and the bumps, then `git tag -a $V`, then push branch
+and tag together. The tag triggers `.github/workflows/release.yml`, which
+drafts a GoReleaser release; publish it with real notes rather than leaving
+GoReleaser's raw commit list. Copy the 7 landing assets into the landing repo
+(`landing-demo-web.mp4` lands there as `landing-demo.mp4`) and push that only
+after the release exists, because of `curlVersion`.
+
+### The traps, and why each one is there
+
+- **`FAROL_DEMO_VERSION` must be on every `seed.sh` call.** Without it
+  `seed.sh` falls back to `git describe --tags --always --dirty`, which stamps
+  the working tree's state into the frames.
+- **`demo.tape` re-seeds inside the shell `vhs` spawns**, and that shell does
+  not inherit the environment `vhs` was launched with. `seed.sh` writes the
+  version it resolved to `/tmp/farol-demo/version` and the tape reads it back.
+  Keep that handshake intact or the GIF silently goes back to `-dirty` while
+  every still beside it looks fine. It is the only tape that re-seeds itself.
+- **Re-seed between tapes.** Tapes write to the store they record, so a tape
+  run on another tape's leftovers photographs the wrong data.
+- **Shoot the light and dark sets in one sitting.** `seed.sh` archives a list
+  at wall-clock time and both the Archive page and the Details modal print
+  that date, so recording them on different days dates the two halves of the
+  same page a day apart.
+- **`screenshot-details-*.png` differ on every run** — the modal prints a task
+  ULID and `seed.sh` mints fresh ids. Everything else reproduces
+  byte-identically, which makes an unexpected diff worth reading.
+- **Keep tapes short.** Appending scenes to a long tape makes VHS silently
+  drop one of the earliest `Screenshot` commands — no error, the file just is
+  not written. That is why hero, split, tree and agent each have their own
+  single-shot tape.
+- **The docs site references specific filenames.** `website-screenshots.tape`
+  writes `screenshot-<name>-dark.png`; pages that ask for a bare
+  `screenshot-<name>.png` will serve a stale leftover forever while the fresh
+  recording sits unread. After recording, check that every path under
+  `website/src/content/` resolves to a file you just wrote:
+  `grep -rho "/screenshot-[a-z-]*\.png" website/src/content/ | sort -u`
+
 ## Testing
 
 `src/store` is plain Go: no terminal, no Bubble Tea, a real SQLite file in a

@@ -177,6 +177,12 @@ post-alpha backlog.
 
 ## Media
 
+> Cutting a release re-records **all** of this at the version about to be
+> tagged, in one push with the version bumps. The ordered sequence, the
+> encodes and the traps live in `AGENTS.md`, "Cutting a release"; the notes
+> below are background on why the pipeline is shaped the way it is.
+
+
 - `demo/demo.gif` and `demo/*.png` are regenerated for the UX redesign
   (Phase A: keymap + focus contract; Phase B: card chrome + sections +
   create UX). The `.tape` scripts use the current `[`/`]` create-level

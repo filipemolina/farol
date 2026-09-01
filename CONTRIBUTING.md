@@ -141,3 +141,10 @@ GoReleaser (`.github/workflows/release.yml`); `.goreleaser.yaml` holds the
 matrix config (CGO_ENABLED=0, cross-compiled linux/darwin × amd64/arm64).
 See `docs/DESIGN.md` §8 for why the driver choice keeps that cross-compile
 matrix possible.
+
+**Re-record the media before you tag, not after.** Every recording shows the
+version in its header bar, so a tag pushed against last release's screenshots
+ships wrong screenshots. `AGENTS.md` §"Cutting a release" has the full ordered
+sequence — all fourteen tapes, the encodes, the version strings in prose, and
+the traps that have each shipped a wrong asset at least once. It is written
+for agents but the steps are the steps.
