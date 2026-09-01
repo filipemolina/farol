@@ -4,7 +4,7 @@
 
 ![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-![Status](https://img.shields.io/badge/status-v0.4.3-blue)
+![Status](https://img.shields.io/badge/status-v0.4.4-blue)
 
 <p align="center"><img src="./assets/farol-banner.svg" alt="Farol" width="760"></p>
 
@@ -320,7 +320,7 @@ loop alone, without the full command reference.
 ## Project status
 
 Alpha shipped. Phases 0–9 of [`docs/ROADMAP.md`](docs/ROADMAP.md) are
-complete (tagged `v0.1.0`). Post-alpha work is at `v0.4.3`.
+complete (tagged `v0.1.0`). Post-alpha work is at `v0.4.4`.
 
 See [`docs/STATUS.md`](docs/STATUS.md) for what each phase changed and why.
 
